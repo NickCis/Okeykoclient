@@ -1,0 +1,52 @@
+okeykoclient:
+	themes:
+		default:
+            __init__.py
+			close.png
+			guif.png
+			logo_chik.png
+			logo.png
+			new.wav	
+	TODO - Esto
+    Config.py - Manejador de la configuracion
+	paths.py - 
+	okegtk.py - Interfaz grafica y procesos (basicamente todo)
+	libokeyko.py - Manejador de okeyko
+	Sound.py - Sonido by emesene
+	okeyko.py - Lanzador de programa
+	Notification.py - Notificaciones by emesene
+
+-----------------------------------------------
+Hecho:
+* Encontrar por las notificaciones tildan a la interfaz grafica. Error causado por uso de threads
+	"los toolkits graficos no son thread safe, esto significa que todo el codigo de interfaz grafica tiene que correr en el thread principal."
+	Leer: http://python.org.ar/pyar/GtkMultiThread (implementacion de threads en pygtk) - FIXED
+* Eliminado uso indebido de threading en okegtk.py
+
+Todo:
+* Sistema de configuracion:
+    * Soporte Themes [hecho]
+    * Decidir si usar cPickle o sistema de Imports (ahora se usan ambos)
+    * Config.py [hecho]
+        *Loadear configuracion por defecto [hecho]
+        *Creacion de carpetas de configuracion
+    * Notificaciones [Desarrollo]:
+    * Sonido
+    * Main
+    * Ventana para configurar    
+* Implementar nueva api. [Desarrollo php e implementacion]
+* Mejorar la gui:
+    * Ventana mensajes:
+    * Lista de mensajes:
+        * Separacion doble linea
+        * Menu segundo click
+        * Connect con ventana mensajes[Falta para enviados]
+        * Soporte emoticons
+    * Menu Tray icon
+
+Bugs:
+    * Icono de leido siempre el mismo [Se desconoce por que]
+
+	
+
+
