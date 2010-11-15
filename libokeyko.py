@@ -197,21 +197,22 @@ class okeyko:
 
     def agenda_lista(self):
         if self.__conectado != True: return
-        url = "/agenda/listado.php"
-        respa = download(self.__dom, url, None, False, self.__cookie)
-        resp = respa.read()
-        respa.close()
-        agenda = []
-        while resp.find("'> Bloquear</a>") > 0:
-            okeyko = search_between("<a href='../okey.php?agenda=", "'>", resp).strip()
-            desc = search_between("</a></div></td><td><div align='center'>", "</div></td> <td><div align='center'><a href='eliminar.php?ok_id=", resp)
-            try: okid = int(search_between("eliminar_sms.php?ok_id=", "</div></td> <td><div align='center'><a href='eliminar.php", resp))
-            except: okid = search_between("<a href='eliminar.php?ok_id=", "'>Eliminar</a", resp)
-            agenda = agenda + [[okeyko,desc,okid]]
-            resp = resp[resp.find("'> Bloquear</a>")+len("'> Bloquear</a>"):]
+        url = "/nv02/agenda/listado.php"
+        resp = self.pagina(url).replace(" bgcolor='#DFDFDF'", "")
+        agdict =  {"{usuario}":"(.*?)", "{nombre}":"(.*?)","{id}":"(.*?)"}
+        template = """<tr><td><div align='center'><a href='../oky_agenda.php?agenda=@{usuario}'>@{bla}</a></div></td><td><div align='center'>{nombre}</div></td> <td><div align='center'><a href='eliminar.php?ok_id={id}'><img src='../images/iconos_mensajes/eliminar2.png' border='0' title='Eliminar'/></a><a href='black.php?ok_id={bla}<img src='../images/iconos_mensajes/bloqueo.png'  /></a>"""
+        agenda = self.getInfo(resp, template, agdict, False)        
+        #agenda = []
+        #while resp.find("'> Bloquear</a>") > 0:
+        #    okeyko = search_between("<a href='../okey.php?agenda=", "'>", resp).strip()
+        #    desc = search_between("</a></div></td><td><div align='center'>", "</div></td> <td><div align='center'><a href='eliminar.php?ok_id=", resp)
+        #    try: okid = int(search_between("eliminar_sms.php?ok_id=", "</div></td> <td><div align='center'><a href='eliminar.php", resp))
+        #    except: okid = search_between("<a href='eliminar.php?ok_id=", "'>Eliminar</a", resp)
+        #    agenda = agenda + [[okeyko,desc,okid]]
+        #    resp = resp[resp.find("'> Bloquear</a>")+len("'> Bloquear</a>"):]
         return agenda
 
-    def borrar_rev(self, menid):
+    def borrar_rec(self, menid):
         if (type(menid) == tuple) | (type(menid) == list):
             menid = "&elimina[]=".join(menid)
         elimina = "?Submit=Eliminar+Seleccion&elimina[]=%s" % menid
@@ -227,10 +228,13 @@ class okeyko:
         print self.pagina(url, elimina)
         return
 
-    def getInfo(self, html, template, tdict=False):
-        template = open(template)
-        tem = "%s" % template.read()
-        template.close()
+    def getInfo(self, html, template, tdict=False, openf=True):
+        if openf:
+            template = open(template)
+            tem = "%s" % template.read()
+            template.close()
+        else:
+            tem = template
         tem = tem.replace("\\", "\\\\")
         remdict = {"(":"\(", ")":"\)", "[":"\[", "]":"\]", ".":"\.", "^":"\^", \
                     "$":"\$", "*":"\*", "+":"\+", "?":"\?", "|":"\|" }
@@ -245,9 +249,6 @@ class okeyko:
         expdict = { "{bla}":".*?", "{espn}":"\\b?"}
         for rem in expdict.iteritems():            
             tem = tem.replace(rem[0], rem[1])
-        repl = ""
-        for a in range(1, len(tdict)+1):
-            repl = "%s{||}\g<%s>"% (repl, a)
         mensajes = re.findall(tem, html, re.DOTALL)
         #mensajes = []        
         #for mensaje in re.findall(tem, html): #TODO: Finish
