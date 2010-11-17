@@ -342,7 +342,14 @@ class mainWindow(gtk.Window):
         labpara = gtk.Label("Para:")
         hbox.pack_start(labpara)        
         labpara.show()
-        para = gtk.Entry()
+        para = gtk.Entry()        
+        autocompletado = gtk.EntryCompletion ()
+        para.set_completion(autocompletado)
+        contactos_store = gtk.ListStore (gobject.TYPE_STRING)
+        for cont in self.__Okeyko.agenda_lista(True):
+            contactos_store.append([cont,])
+        autocompletado.set_model (contactos_store)
+        autocompletado.set_text_column (0)       
         if destinatario != None: para.set_text(destinatario)
         hbox.pack_start(para)
         para.show()
@@ -361,8 +368,17 @@ class mainWindow(gtk.Window):
         mensaje.set_size_request(275,100)
         redactar.vbox.pack_start(mensaje)
         mensaje.show()
+        numlabel = gtk.Label()
+        redactar.vbox.pack_start(numlabel)
+        numlabel.show()
         redactar.show()
         enviar.connect("clicked", self.mandarmensaje, para, mensaje)
+        mensaje.get_buffer().connect("changed", self.actnumlabel, numlabel)
+    
+    def actnumlabel(self, wid, numlabel):
+        #length = len(wid.get_text(wid.get_start_iter(), wid.get_end_iter())
+        length = wid.get_char_count()
+        numlabel.set_text("%s" % length)
 
     def mandarmensaje(self, widget, widpara, widmensaje):
         '''Callback para mandar mensaje '''

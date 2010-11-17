@@ -69,6 +69,7 @@ class okeyko:
         self.__cookie = None
         self.__usuario = None
         self.__contra = None
+        self.__agenda_lista = None
 
     def login(self, usuario, contra):
         self.__usuario = usuario if (usuario[:1] != "@") else usuario[1:]
@@ -195,22 +196,20 @@ class okeyko:
             print "============ Mensaje enviado con exito =========="
             return True, "Mensaje enviado exitosamente"        
 
-    def agenda_lista(self):
+    def agenda_lista(self, oname=False, redown=False):
         if self.__conectado != True: return
-        url = "/nv02/agenda/listado.php"
-        resp = self.pagina(url).replace(" bgcolor='#DFDFDF'", "")
-        agdict =  {"{usuario}":"(.*?)", "{nombre}":"(.*?)","{id}":"(.*?)"}
-        template = """<tr><td><div align='center'><a href='../oky_agenda.php?agenda=@{usuario}'>@{bla}</a></div></td><td><div align='center'>{nombre}</div></td> <td><div align='center'><a href='eliminar.php?ok_id={id}'><img src='../images/iconos_mensajes/eliminar2.png' border='0' title='Eliminar'/></a><a href='black.php?ok_id={bla}<img src='../images/iconos_mensajes/bloqueo.png'  /></a>"""
-        agenda = self.getInfo(resp, template, agdict, False)        
-        #agenda = []
-        #while resp.find("'> Bloquear</a>") > 0:
-        #    okeyko = search_between("<a href='../okey.php?agenda=", "'>", resp).strip()
-        #    desc = search_between("</a></div></td><td><div align='center'>", "</div></td> <td><div align='center'><a href='eliminar.php?ok_id=", resp)
-        #    try: okid = int(search_between("eliminar_sms.php?ok_id=", "</div></td> <td><div align='center'><a href='eliminar.php", resp))
-        #    except: okid = search_between("<a href='eliminar.php?ok_id=", "'>Eliminar</a", resp)
-        #    agenda = agenda + [[okeyko,desc,okid]]
-        #    resp = resp[resp.find("'> Bloquear</a>")+len("'> Bloquear</a>"):]
-        return agenda
+        if (self.__agenda_lista == None) | ( redown != False):
+            url = "/nv02/agenda/listado.php"
+            resp = self.pagina(url).replace(" bgcolor='#DFDFDF'", "")
+            agdict =  {"{usuario}":"(.*?)", "{nombre}":"(.*?)","{id}":"(.*?)"}
+            template = """<tr><td><div align='center'><a href='../oky_agenda.php?agenda=@{usuario}'>@{bla}</a></div></td><td><div align='center'>{nombre}</div></td> <td><div align='center'><a href='eliminar.php?ok_id={id}'><img src='../images/iconos_mensajes/eliminar2.png' border='0' title='Eliminar'/></a><a href='black.php?ok_id={bla}<img src='../images/iconos_mensajes/bloqueo.png'  /></a>"""
+            self.__agenda_lista = self.getInfo(resp, template, agdict, False)        
+        if oname == True:
+            ret = []
+            for name in self.__agenda_lista:
+                ret.append(name[0])
+            return ret
+        return self.agenda_lista
 
     def borrar_rec(self, menid):
         if (type(menid) == tuple) | (type(menid) == list):
