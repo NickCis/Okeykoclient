@@ -1,8 +1,8 @@
 import gtk
 import gobject
 
-import paths
 import MensajeVen
+import TextField
 
 class mainWindow(gtk.Window):
     ''' Clase que implementa todo lo relacionado a la interfaz grafica'''    
@@ -12,14 +12,15 @@ class mainWindow(gtk.Window):
             (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
                 ()),
     }
-
-    def __init__(self, okeyko, colaOut, notificaciones=None):
+    def __init__(self, Control):
+    #def __init__(self, okeyko, colaOut, notificaciones=None):
         ''' Crea ventana '''
-
-        self.__Okeyko = okeyko
-        self.__colaOut = colaOut
+        self.__Okeyko = Control['Okeyko']
+        self.__queueToServer = Control['queueToServer']
         #Agregar notificaciones (para mensaje enviado correcto) hasta mejor idea
-        self.__Notificaciones = notificaciones
+        #self.__Notificaciones = notificaciones
+        self.__Notificaciones = None
+        self.__Config = Control['Config']
 
         # create a new window
         #self.mainWindow = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -82,7 +83,7 @@ class mainWindow(gtk.Window):
 
     def conectar(self, widget, user, contra):
         ''' Callback para conectar '''
-        PBanim = gtk.gdk.PixbufAnimation(paths.DEFAULT_THEME_PATH + "loading.gif")
+        PBanim = gtk.gdk.PixbufAnimation(self.__Config.THEME_PATH + "loading.gif")
         anim = gtk.Image()
         anim.set_from_animation(PBanim)
         label = gtk.Label("\n Conectando \n")
@@ -94,7 +95,7 @@ class mainWindow(gtk.Window):
         entry_text = user.get_text()
         contra_text = contra.get_text()
         print "---- Conectando -----"
-        self.__colaOut.put((self.__Okeyko.login, (entry_text, contra_text), {}, self.post_conectar, (anim, label), {}))
+        self.__queueToServer.put((self.__Okeyko.login, (entry_text, contra_text), {}, self.post_conectar, (anim, label), {}))
 
     def post_conectar(self, arg, arg2):
         conectado, error = self.__Okeyko.conectado()
@@ -122,10 +123,28 @@ class mainWindow(gtk.Window):
         '''Cambia la ventana despues de conectarse '''
         #Aca ya esta conectado, damos la senal que se conecto y cambia la ventana
     #    self.conectwindow = self.mainWindow.child
-        self.remove(self.child)
+        self.remove(self.child)     
 
         vbox = gtk.VBox(False, 0)
         self.add(vbox)
+        
+        userHbox = gtk.HBox(False, 0)
+        vbox.pack_start(userHbox, False, False)
+        userNick, userAvatar, userEstado = self.__Okeyko.userinfo()
+        uAvatar =  gtk.gdk.PixbufLoader()
+        uAvatar.write(userAvatar)
+        userAvatar = uAvatar.get_pixbuf()
+        uAvatar.close()
+        userIm = gtk.Image()
+        userIm.set_from_pixbuf(userAvatar)
+        userHbox.pack_start(userIm, False, False)
+        userInVbox = gtk.VBox(False, 0)
+        userHbox.pack_start(userInVbox, True, True)
+        userNick = gtk.Label("@%s" % userNick)
+        userInVbox.pack_start(userNick, True, True)
+        userEstE = TextField.TextField('','', False)
+        userEstE.text = userEstado
+        userInVbox.pack_start(userEstE, True, True)
 
         hboxmenu = gtk.HBox(False, 0)
         #vbox.add(hboxmenu)
@@ -273,11 +292,11 @@ class mainWindow(gtk.Window):
         '''
 
         imgcache = {"estado0" : gtk.gdk.pixbuf_new_from_file(\
-                        paths.DEFAULT_THEME_PATH + "new.png"),
+                        self.__Config.THEME_PATH + "new.png"),
                     "estado1" : gtk.gdk.pixbuf_new_from_file(\
-                        paths.DEFAULT_THEME_PATH + "leido_pc.png"),
+                        self.__Config.THEME_PATH + "leido_pc.png"),
                     "estado2" : gtk.gdk.pixbuf_new_from_file(\
-                        paths.DEFAULT_THEME_PATH + "leido_cel.png")}
+                        self.__Config.THEME_PATH + "leido_cel.png")}
         for mensaje in mensajes:
             
             mensaje0 = "Para: %s" % mensaje[0] if (enviados) \
@@ -299,7 +318,8 @@ class mainWindow(gtk.Window):
                 avatarG = imgcache[mensaje[4]][0]
                 avatarM = imgcache[mensaje[4]][1]
             except:                
-                imgavatarm= self.__Okeyko.pagina("/upload/imagenes/galeria/g/" + mensaje[4])
+                #imgavatarm= self.__Okeyko.pagina("/upload/imagenes/galeria/g/" + mensaje[4])
+                imgavatarm= self.__Okeyko.avatar(mensaje[4])
                 avatar =  gtk.gdk.PixbufLoader()
                 avatar.write(imgavatarm)
                 avatarG = avatar.get_pixbuf()
@@ -383,7 +403,7 @@ class mainWindow(gtk.Window):
     def mandarmensaje(self, widget, widpara, widmensaje):
         '''Callback para mandar mensaje '''
         Hbox = gtk.HBox()
-        PBanim = gtk.gdk.PixbufAnimation(paths.DEFAULT_THEME_PATH + "loading.gif")
+        PBanim = gtk.gdk.PixbufAnimation(self.__Config.THEME_PATH + "loading.gif")
         anim = gtk.Image()
         anim.set_from_animation(PBanim)
         label = gtk.Label("Enviando")
@@ -395,7 +415,7 @@ class mainWindow(gtk.Window):
         mensaje = widmensaje.get_buffer().get_text(\
                     widmensaje.get_buffer().get_start_iter(),\
                     widmensaje.get_buffer().get_end_iter())
-        self.__colaOut.put((self.__Okeyko.enviar_mensaje, (para, mensaje), {}, self.post_mandarmensaje, (widget.get_parent().get_parent(), widget.get_parent().get_parent().get_parent()), {}))
+        self.__queueToServer.put((self.__Okeyko.enviar_mensaje, (para, mensaje), {}, self.post_mandarmensaje, (widget.get_parent().get_parent(), widget.get_parent().get_parent().get_parent()), {}))
         return
 
     def post_mandarmensaje(self, arg, arg2):
@@ -457,7 +477,7 @@ class mainWindow(gtk.Window):
         agenda.vbox.pack_start(agendaTreeView, True, True, 0)
 
         agenda.show_all()
-        self.__colaOut.put((self.__Okeyko.agenda_lista, (), {}, \
+        self.__queueToServer.put((self.__Okeyko.agenda_lista, (), {}, \
                             self.agenda_ventana_add, (agenda_store), {}))
         return
 
@@ -483,11 +503,11 @@ class mainWindow(gtk.Window):
         MensajeVen.MensajeVen(model[row][5], model[row][2], model[row][3],\
                                 model[row][4], model[row][6])
         if model[row][7] == 0:
-            self.__colaOut.put((self.__Okeyko.set_leido, (model[row][5],),\
+            self.__queueToServer.put((self.__Okeyko.set_leido, (model[row][5],),\
                                 {}, self.Nulo, (), {}))
             texto = model[row][1].replace(" background=\"#F7BE81\"","")
             pixbuf = self.add_status(model[row][0], gtk.gdk.pixbuf_new_from_file(\
-                        paths.DEFAULT_THEME_PATH + "leido_pc.png"),\
+                        self.__Config.THEME_PATH + "leido_pc.png"),\
                         model[row][0].get_width() - 15,\
                         model[row][0].get_height() - 15)
             model.set_value(model.get_iter_from_string("%s:0" % (row)),0,pixbuf)

@@ -15,6 +15,9 @@ def queue_manager(cola):
 
     return True
 
+def queue_maker():
+    return Queue.Queue(), Queue.Queue()
+
 class server(threading.Thread):
     ''' Recive que funcion ejecutar en thread y pone en colaOut funcion callback 
         colaIn debe ser: method, args, kwargs, callback, cargs, ckwargs
@@ -54,7 +57,8 @@ class server(threading.Thread):
 
 class actmen(threading.Thread):
     ''' Thread que actualiza los mensajes y avisa si hay nuevos '''
-    def __init__(self, ventana, okeyko, cola, sound=None, notification=None, condition=None):
+    def __init__(self, Control):
+    #def __init__(self, ventana, okeyko, cola, sound=None, notification=None, condition=None):
         '''
         okeyko = Funcion de libokeyko (creada y conectada)
         condition = Condicion que se activa al conectarse
@@ -62,15 +66,18 @@ class actmen(threading.Thread):
         notificaciones = Funcion para notificaciones OSD
         '''
         threading.Thread.__init__(self)
-        self.__Cola = cola
-        self.__Okeyko = okeyko
-        self.__MainWindow = ventana
-        self.__Condition = condition
-        self.__Sound = sound
-        self.__Notificaciones = notification
+        self.__Cola = Control['queueToGui']
+        self.__Okeyko = Control['Okeyko']
+        #self.__Condition = condition
+        self.__Condition = None
+        self.__Sound = Control['Sound']        
         self.__MinId = None
         self.setDaemon(True)
-        self.start()
+        #self.start()
+        
+    def setgui(self, gui):
+        self.__MainWindow = ventana
+        self.__Notificaciones = notification        
 
     def run(self):
         if self.__Condition != None:

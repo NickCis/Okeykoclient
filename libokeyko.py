@@ -1,5 +1,6 @@
 import re
 import httplib, urllib
+from BeautifulSoup import BeautifulSoup as BS
 #from xml.etree import ElementTree as ET
 #import htmlentitydefs
 
@@ -70,11 +71,18 @@ class okeyko:
         self.__usuario = None
         self.__contra = None
         self.__agenda_lista = None
+        self.__inbox = False
+        self.__outbox = False
+        self.__avatar = False
+        self.__estado = False
+        
 
     def login(self, usuario, contra):
         self.__usuario = usuario if (usuario[:1] != "@") else usuario[1:]
         self.__contra = contra
         self.set_cookie()
+        if self.__conectado:
+           self.get_all()
         return
 
     def set_cookie(self):
@@ -94,14 +102,67 @@ class okeyko:
             self.__conectado_result = pag #Ok2.0
             print self.__conectado_result
             #return
-        self.__conectado = True if (pag.find("Has iniciado sesion exitosamente")) else False #Ok2.0
+        self.__conectado = True if (pag.find("exitosamente")) else False #Ok2.0
         self.__conectado_result = pag #Ok2.0
         print self.__conectado_result
         return
 
     def conectado(self):
-        if self.pagina("/busca_filtrado.php") == "no esta logeado": self.set_cookie()
+        if self.pagina("/nv02/index.php").find("|| Hola") == -1:
+            self.__conectado = False
+            self.set_cookie()
         return self.__conectado, self.__conectado_result
+        
+    def get_all(self):
+        ''' Obtiene: inbox, outbox, avatar, estado'''
+        if self.__conectado != True: return
+        url = "/nv02/boceto.php"
+        pag = self.pagina(url)
+        pag = BS(pag)
+        lis = pag.findAll('li')
+        self.__inbox = []
+        for i in range(0, len(lis) - 4 ):
+            li = lis[i + 4]
+            de = li.findAll('a')[1].string
+            hora = li.find('td',{'align':'right'})
+            mensaje = li.findAll('br')[5].next
+            Oik = li.label['for']
+            avatar = li.img['src'][li.img['src'].rfind('/'):]
+            leido = li.findAll('div',{'style': ' font-size:11px; color:#666;' \
+                    })[0].contents[0]
+            self.__inbox.append([de, hora, mensaje, Oik, avatar, leido])
+        outs = pag.findAll('div',{'class':'conten_mensaje'})
+        self.__out = []
+        for out in outs:
+            mensaje = out.find('div', {'id':'cuerpo_mensaje'}).text
+            ph = out.find('div',{'id':'mensaje_head'}).text
+            para = ph[ph.find('">')+2:ph.find('|')]
+            hora = ph[ph.find('|')+1:ph.rfind('|')]
+            #leido = out.find('div',{'id':'herramientas'}).replace("| Eliminar",'')
+            leido = ""
+            Oid = out.find('div',{'id':'herramientas'}).input['value']
+            self.__out.append([para, hora, mensaje, Oid, leido])
+        avt = pag.find('img',{'title':'Usuario', 'class':'reflect rheight20'})['src']
+        self.__avatar = self.avatar(avt[avt.rfind('/')+1:],'m')
+        self.__estado = pag.find('b',{'style':'color:#FFF;'}).text
+
+    def userinfo(self):
+        if self.__conectado != True: return
+        return self.__usuario, self.__avatar, self.__estado
+
+    def inbox(self):
+        ''' Devuelve los mensajes de inbox en una lista
+        Formato: [de, hora, mensaje, Oid, leido]'''
+        if self.__conectado != True: return
+        if self.__inbox == False: return
+        return self.__inbox
+
+    def outbox(self):
+        ''' Devuelve los mensajes de outbox en una lista
+        Formato: [para, hora, mensaje, Oid, avatar, leido]'''
+        if self.__conectado != True: return
+        if self.__inbox == False: return
+        return self.__inbox
 
     def bandeja(self):
         if self.__conectado != True: return
@@ -211,7 +272,7 @@ class okeyko:
             return ret
         return self.agenda_lista
 
-    def borrar_rec(self, menid):
+    def inbox_bor(self, menid):
         if (type(menid) == tuple) | (type(menid) == list):
             menid = "&elimina[]=".join(menid)
         elimina = "?Submit=Eliminar+Seleccion&elimina[]=%s" % menid
@@ -219,7 +280,7 @@ class okeyko:
         print self.pagina(url, elimina)
         return
         
-    def borrar_env(self, menid):
+    def outbox_box(self, menid):
         if (type(menid) == tuple) | (type(menid) == list):
             menid = "&elimina[]=".join(menid)
         elimina = "?Submit=Eliminar+Seleccion&eliminae[]=%s" % menid
@@ -256,6 +317,12 @@ class okeyko:
         #    premen = premen.split("{||}")
         #    mensajes.append(premen)
         return mensajes
+        
+    def avatar(self,link,size='g'):
+        if (size != 'g') & (size != 'm'): size = 'g'
+        link = "/upload/imagenes/galeria/%s/%s" % (size, link)
+        pag = self.pagina(link)
+        return pag
 
     def pagina(self,link,post=None):
         if self.__conectado != True: return
