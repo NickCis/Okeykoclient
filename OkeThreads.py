@@ -75,15 +75,18 @@ class actmen(threading.Thread):
         self.setDaemon(True)
         #self.start()
         
-    def setgui(self, gui):
-        self.__MainWindow = ventana
-        self.__Notificaciones = notification        
+    def setgui(self, MainWindow, Notificaciones=None):
+        self.__MainWindow = MainWindow
+        self.__Notifications = Notificaciones
+        
+    def thStart(self, *args, **kargs):
+        self.start()
 
     def run(self):
-        if self.__Condition != None:
-            self.__Condition.acquire()
-            self.__Condition.wait()
-            self.__Condition.release()
+        #if self.__Condition != None:
+        #    self.__Condition.acquire()
+        #    self.__Condition.wait()
+        #    self.__Condition.release()
 
         mensajes = self.__Okeyko.bandeja()
         try:
@@ -113,8 +116,8 @@ class actmen(threading.Thread):
                                         (paths.DEFAULT_THEME_PATH + \
                                         "new.wav",), {}))                               
                 #self.__MainWindow.blink()
-                if self.__Notificaciones != None:
-                    self.__Cola.put((self.__Notificaciones.newNotification, \
+                if self.__Notification != None:
+                    self.__Cola.put((self.__Notification.newNotification, \
                                         ("Mensaje Nuevo", 0), {}))
                     #notificaciones.newNotification("Mensaje Nuevo", 0, 1, color=col)
             except:

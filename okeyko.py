@@ -19,7 +19,8 @@ def main():
     Control = { 'queueToGui' : queueToGui, 'queueToServer' : queueToServer, \
                 'Okeyko' : Okeyko, 'Config' : Conf, 'Sound' : Sonido, \
                 'queueManager' : queueManager}
-    #ActMen = OkeThreads.actmen()
+    ActMen = OkeThreads.actmen(Control)
+    Control.update({'ActMen':ActMen})
     gtkui.gtk_main(Control)
     #Notificaciones = Notification.MainClass(Conf)
     #MainWindow = okegtk.mainWindow(Okeyko, queueToServer, Notificaciones)
