@@ -9,9 +9,11 @@ import TrayIcon
 
 def gtk_main(Control):
     gtk.gdk.threads_init()
-    #Notificaciones = Notification.MainClass(Control)
-    MainWindow = okegtk.mainWindow(Control)
-    #MainWindow.connect('redraw-done', OkeThreads.actmen, Okeyko, queueToGtk, Sonido, Notificaciones)
+    Notificaciones = Notification.MainClass(Control)
+    MainWindow = okegtk.mainWindow(Control)    
     Tray = TrayIcon.TrayIcon(MainWindow)
+    Control.update({'Notification' : Notificaciones})
+    Control['ActMen'].setgui(MainWindow, Notificaciones)
+    MainWindow.connect('redraw-done', Control['ActMen'].thStart)
     gobject.timeout_add(500, Control['queueManager'], Control['queueToGui'])
     gtk.main()

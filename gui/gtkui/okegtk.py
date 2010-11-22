@@ -140,8 +140,10 @@ class mainWindow(gtk.Window):
         userHbox.pack_start(userIm, False, False)
         userInVbox = gtk.VBox(False, 0)
         userHbox.pack_start(userInVbox, True, True)
+        userNickHbox = gtk.HBox(False, 0)
         userNick = gtk.Label("@%s" % userNick)
-        userInVbox.pack_start(userNick, True, True)
+        userNickHbox.pack_start(userNick, False, False)
+        userInVbox.pack_start(userNickHbox, False, False)
         userEstE = TextField.TextField('','', False)
         userEstE.text = userEstado
         userInVbox.pack_start(userEstE, True, True)

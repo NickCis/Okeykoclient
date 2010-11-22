@@ -562,11 +562,11 @@ class Notification(gtk.Window):
                 return gtk.gdk.screen_height() - self.get_position()[1]
 
 class MainClass:
-    def __init__(self, Control):
+    def __init__(self, config):
         ''' Constructor '''
 		# TODO: Agregar soporte de themes
         #self.theme = controller.theme
-        self.Config = Control['Config']
+        self.Config = config
         self.updateConfig()
 
 
