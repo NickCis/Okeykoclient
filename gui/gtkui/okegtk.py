@@ -19,7 +19,7 @@ class mainWindow(gtk.Window):
         self.__queueToServer = Control['queueToServer']
         #Agregar notificaciones (para mensaje enviado correcto) hasta mejor idea
         #self.__Notificaciones = notificaciones
-        self.__Notificaciones = None
+        self.__Notification = Control['Notification']
         self.__Config = Control['Config']
 
         # create a new window
@@ -431,7 +431,7 @@ class mainWindow(gtk.Window):
             label = gtk.Label(error)
             container.pack_start(label)
             label.show()
-        self.__Notificaciones.newNotification(tit)
+        self.__Notification.newNotification(tit)
         return
 
     def agenda_ventana(self, widget, data=None):
