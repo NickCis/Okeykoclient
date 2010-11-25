@@ -1,8 +1,9 @@
 import re
 import httplib, urllib
+import htmlentitydefs
 from BeautifulSoup import BeautifulSoup as BS
 #from xml.etree import ElementTree as ET
-#import htmlentitydefs
+
 
 def download(dom, url, params=None, ref=False, cookie=None, ctype=False, clength=False):
 
@@ -40,28 +41,46 @@ def search_between(ini, end, html):
     except:
         return None
 
-def changeEntities(str):
-    str = str.encode( "utf-8" )
-    lst = htmlentitydefs.name2codepoint
-    for find, replace in lst.iteritems():
-        find = "&%s;" % (find)
-        replace = unichr(int(replace))
-        #replace = "&%s;" % (replace)
-        str = str.replace(find, replace)
-    return str
+def unescape(text):
+   """Removes HTML or XML character references 
+      and entities from a text string.
+   @param text The HTML (or XML) source text.
+   @return The plain text, as a Unicode string, if necessary.
+   from Fredrik Lundh
+   2008-01-03: input only unicode characters string.
+   http://effbot.org/zone/re-sub.htm#unescape-html
+   """
+   def fixup(m):
+      text = m.group(0)
+      if text[:2] == "&#":
+         # character reference
+         try:
+            if text[:3] == "&#x":
+               return unichr(int(text[3:-1], 16))
+            else:
+               return unichr(int(text[2:-1]))
+         except ValueError:
+            print "Value Error"
+            pass
+      else:
+         # named entity
+         # reescape the reserved characters.
+         try:
+            if text[1:-1] == "amp":
+               text = "&amp;amp;"
+            elif text[1:-1] == "gt":
+               text = "&amp;gt;"
+            elif text[1:-1] == "lt":
+               text = "&amp;lt;"
+            else:
+               #print text[1:-1]
+               text = unichr(htmlentitydefs.name2codepoint[text[1:-1]])
+         except KeyError:
+            print "keyerror"
+            pass
+      return text # leave as is
+   return re.sub("&#?\w+;", fixup, text)
 
-def toEntities(str):
-    print "pre %s" % (str)
-    #lst = htmlentitydefs.codepoint2name
-    #for find, replace in lst.iteritems():
-        #replace = "&#%s;" % (find)
-        #replace = "&%s;" % (replace)
-        #find = unichr(int(find))
-        #str = str.replace(find, replace)
-    #str = unicode(str, "iso-8859-1")
-    #str = unicode(str, "utf-8")
-    #print "pos %s" % (str)
-    return str
 
 class okeyko:
     def __init__(self):
@@ -103,7 +122,7 @@ class okeyko:
             print self.__conectado_result
             #return
         self.__conectado = True if (pag.find("exitosamente")) else False #Ok2.0
-        self.__conectado_result = pag #Ok2.0
+        self.__conectado_result = BS(pag).text #Ok2.0
         print self.__conectado_result
         return
 
@@ -117,34 +136,36 @@ class okeyko:
         ''' Obtiene: inbox, outbox, avatar, estado'''
         if self.__conectado != True: return
         url = "/nv02/boceto.php"
-        pag = self.pagina(url)
-        pag = BS(pag)
+        pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
+        avt = pag.find('img',{'title':'Usuario', 'class':'reflect rheight20'})['src']
+        self.__avatar = self.avatar(avt[avt.rfind('/')+1:],'m')
+        self.__estado = pag.find('b',{'style':'color:#FFF;'}).text
         lis = pag.findAll('li')
         self.__inbox = []
         for i in range(0, len(lis) - 4 ):
             li = lis[i + 4]
             de = li.findAll('a')[1].string
-            hora = li.find('td',{'align':'right'})
+            hora = li.find('td',{'align':'right'}).text
             mensaje = li.findAll('br')[5].next
             Oik = li.label['for']
             avatar = li.img['src'][li.img['src'].rfind('/'):]
             leido = li.findAll('div',{'style': ' font-size:11px; color:#666;' \
                     })[0].contents[0]
-            self.__inbox.append([de, hora, mensaje, Oik, avatar, leido])
+            leido = 1 #TODO: Arreglar leido
+            fav = 0 #TODO: Get Favorito
+            self.__inbox.append([de, hora, mensaje, Oik, avatar, leido, fav])
         outs = pag.findAll('div',{'class':'conten_mensaje'})
-        self.__out = []
+        self.__outbox = []
         for out in outs:
             mensaje = out.find('div', {'id':'cuerpo_mensaje'}).text
             ph = out.find('div',{'id':'mensaje_head'}).text
             para = ph[ph.find('">')+2:ph.find('|')]
             hora = ph[ph.find('|')+1:ph.rfind('|')]
-            #leido = out.find('div',{'id':'herramientas'}).replace("| Eliminar",'')
-            leido = ""
             Oid = out.find('div',{'id':'herramientas'}).input['value']
-            self.__out.append([para, hora, mensaje, Oid, leido])
-        avt = pag.find('img',{'title':'Usuario', 'class':'reflect rheight20'})['src']
-        self.__avatar = self.avatar(avt[avt.rfind('/')+1:],'m')
-        self.__estado = pag.find('b',{'style':'color:#FFF;'}).text
+            avatar = avt[avt.rfind('/')+1:] #TODO: Get avatar
+            #leido = out.find('div',{'id':'herramientas'}).replace("| Eliminar",'')
+            leido = 1 #TODO: Arreglar leido
+            self.__outbox.append([para, hora, mensaje, Oid, avatar, leido])
 
     def userinfo(self):
         if self.__conectado != True: return
@@ -152,43 +173,19 @@ class okeyko:
 
     def inbox(self):
         ''' Devuelve los mensajes de inbox en una lista
-        Formato: [de, hora, mensaje, Oid, leido]'''
+        Formato: [de, hora, mensaje, Oik, avatar, leido, fav]'''
         if self.__conectado != True: return
         if self.__inbox == False: return
-        return self.__inbox
+        return [list(a) for a in self.__inbox]
 
     def outbox(self):
         ''' Devuelve los mensajes de outbox en una lista
-        Formato: [para, hora, mensaje, Oid, avatar, leido]'''
+        Formato: [para, hora, mensaje, Oid, leido]'''
         if self.__conectado != True: return
         if self.__inbox == False: return
-        return self.__inbox
+        return [list(a) for a in self.__outbox]
 
-    def bandeja(self):
-        if self.__conectado != True: return
-        url = "/nv02/0ajax_more.php"
-        params = urllib.urlencode({'lastmsg': '9999999999999'})
-        pag = self.pagina(url, params)
-        mensajes = self.getInfo(pag,"libokeykoTre")
-        #print ET.XML(pag)
-        #for sub in resp:
-        #    de = sub[0].text if ( sub[0].text != None ) else ""
-        #    hora = "%s // %s" % (sub[1].text,sub[2].text) if ( sub[1].text != None ) | ( sub[2].text != None ) else ""
-        #    mensaje = sub[3].text if ( sub[3].text != None ) else ""
-        #    okid = sub[4].text if ( sub[4].text != None ) else ""
-        #    avatar = sub[5].text if ( sub[5].text != None ) else "perfil.png"
-        #    leido = sub[6].text if ( sub[6].text != None ) else ""
-        #    fav = sub[7].text if ( sub[6].text != None ) else ""
-        #    enviado = sub[8].text if ( sub[6].text != None ) else ""
-        #    mensajes.append([de,hora,mensaje,okid,avatar,leido,fav,enviado])
-        menord = []
-        for men in mensajes:
-            leido = "1" if (men[6] == "Leido desde la PC ") else "2"
-            menord.append((men[1],men[2]+men[3],men[4],men[6],men[0],leido,None,None))
-        mensajes = menord
-        return mensajes
-
-    def bandeja_nuevos(self, minid= None):
+    def badeja_nuevos(self, minid= None):
         pass
         #http://www.okeyko.com/nv02/nuevos.php
         url = "/nv02/nuevos.php"
@@ -217,27 +214,12 @@ class okeyko:
         self.pagina(url)
         return
 
-    def salida(self):
-        return [["","","","","",""]]
-        if self.__conectado != True: return
-        url = "/cleinte/api.php?tipo=outbox"
-        mensajes = []
-        resp = ET.XML(self.pagina(url))
-        for sub in resp:
-            para = sub[0].text if ( sub[0].text != None ) else ""
-            hora = "%s // %s" % (sub[1].text,sub[2].text) if ( sub[1].text != None ) | ( sub[2].text != None ) else ""
-            mensaje = sub[3].text if ( sub[3].text != None ) else ""
-            okid = sub[4].text if ( sub[4].text != None ) else ""
-            avatar = sub[5].text if ( sub[5].text != None ) else "perfil.png"
-            leido = sub[6].text if ( sub[6].text != None ) else ""
-            mensajes.append([para,hora,mensaje,okid,avatar,leido])
-        return mensajes
-
     def enviar_mensaje(self, para, men):
         #http://www.okeyko.com/nv02/ajax.php para= mensaje=
         if self.__conectado != True: return
         para = para.replace("@","")
-        men = unicode( men, "utf-8").encode("iso-8859-1")
+        #men = unicode( men, "utf-8").encode("iso-8859-1")
+        #men = unicode( men, "utf-8")
         if len(men) > 250:
             print "============= Error enviando mensaje ========== \n okeyko.enviar: mas de 250 caracteres \n" + para
             return False, "Mensaje con mas de 250 caracteres"
@@ -255,7 +237,19 @@ class okeyko:
             return  False, "Mensaje no salio"
         else:
             print "============ Mensaje enviado con exito =========="
-            return True, "Mensaje enviado exitosamente"        
+            return True, "Mensaje enviado exitosamente"
+
+    def estadoSet(self, estado):
+        #http://www.okeyko.com/nv02/estadoajax.php estado
+        if self.__conectado != True: return        
+        if len(estado) > 250:
+            print "============= Error estado ========== \n okeyko.estadoSet: mas de 250 caracteres \n" + para
+            return False, "Mensaje con mas de 250 caracteres"
+        url = "/nv02/estadoajax.php"
+        params =  urllib.urlencode({'estado': estado}) 
+        resp = self.pagina(url, params)
+        print "============ Estado cambiado =========="
+        return True, "Estado cambiado"
 
     def agenda_lista(self, oname=False, redown=False):
         if self.__conectado != True: return
@@ -270,7 +264,7 @@ class okeyko:
             for name in self.__agenda_lista:
                 ret.append(name[0])
             return ret
-        return self.agenda_lista
+        return list(self.agenda_lista)
 
     def inbox_bor(self, menid):
         if (type(menid) == tuple) | (type(menid) == list):
@@ -280,7 +274,7 @@ class okeyko:
         print self.pagina(url, elimina)
         return
         
-    def outbox_box(self, menid):
+    def outbox_bor(self, menid):
         if (type(menid) == tuple) | (type(menid) == list):
             menid = "&elimina[]=".join(menid)
         elimina = "?Submit=Eliminar+Seleccion&eliminae[]=%s" % menid
@@ -310,12 +304,6 @@ class okeyko:
         for rem in expdict.iteritems():            
             tem = tem.replace(rem[0], rem[1])
         mensajes = re.findall(tem, html, re.DOTALL)
-        #mensajes = []        
-        #for mensaje in re.findall(tem, html): #TODO: Finish
-        #for mensaje in re.findall("<li>(.*?)</li>",html, re.DOTALL): #TODO: Finish
-        #    premen = re.sub(tem, repl, mensaje)
-        #    premen = premen.split("{||}")
-        #    mensajes.append(premen)
         return mensajes
         
     def avatar(self,link,size='g'):

@@ -15,6 +15,7 @@ class mainWindow(gtk.Window):
     def __init__(self, Control):
     #def __init__(self, okeyko, colaOut, notificaciones=None):
         ''' Crea ventana '''
+        self.__Control = Control
         self.__Okeyko = Control['Okeyko']
         self.__queueToServer = Control['queueToServer']
         #Agregar notificaciones (para mensaje enviado correcto) hasta mejor idea
@@ -146,6 +147,7 @@ class mainWindow(gtk.Window):
         userInVbox.pack_start(userNickHbox, False, False)
         userEstE = TextField.TextField('','', False)
         userEstE.text = userEstado
+        userEstE.connect("text-changed", self.estadoSet )
         userInVbox.pack_start(userEstE, True, True)
 
         hboxmenu = gtk.HBox(False, 0)
@@ -197,13 +199,13 @@ class mainWindow(gtk.Window):
         frame2.add(sw2)
         
         # === Recividos
-        
-        #Crear el ListStore
-        # avatar, mensaje, de, hora, mensaje, okid, avatar, leido, fav, enviado
-        self.mensajes_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, gtk.gdk.Pixbuf, int, str, str)
+        #Crear el ListStore 
+        # muestra_avatar, muestra_texto, de, hora, mensaje, Oik, avatar, leido, fav
+        #self.inbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, gtk.gdk.Pixbuf, int, int)
+        self.inbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, str, int, int)
         
         #crear TreeView usando el ListStore y setear sus caracteristicas
-        mensajeslist = gtk.TreeView(self.mensajes_store)
+        mensajeslist = gtk.TreeView(self.inbox_store)
         mensajeslist.set_headers_visible(False)
         mensajeslist.connect("row-activated", self.mostrarmensaje)
 
@@ -234,13 +236,13 @@ class mainWindow(gtk.Window):
         sw.add(mensajeslist)
 
         # == Enviados
-        
         #Crear el ListStore
-        # avatar, mensaje, de, hora, mensaje, okid, avatar, leido
-        self.enviados_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, gtk.gdk.Pixbuf, int)
+        # muestra_avatar, muestra_mensaje, de, hora, mensaje, okid, avatar, leido
+        #self.outbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, gtk.gdk.Pixbuf, int)
+        self.outbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, str, int)
         
         #crear TreeView usando el ListStore y setear sus caracteristicas
-        enviadoslist = gtk.TreeView(self.enviados_store)
+        enviadoslist = gtk.TreeView(self.outbox_store)
         enviadoslist.set_headers_visible(False)        
 
         #crear Column
@@ -277,84 +279,70 @@ class mainWindow(gtk.Window):
         #self.__env_list(self.enviados_store, self.__Okeyko.salida())
 
 
-    def mensajes(self, mensajes,enviados=False,nuevos=False):
-        '''Funcion para actualizar la lista de mensajes, agregando los especificados en "mensajes"
-        Generalmente es llamada por fuera'''
-        if enviados:
-            store = self.enviados_store
-        else:
-            store = self.mensajes_store
-        if nuevos:
-            mensajes.reverse()
-        self.__men_list(store, mensajes, enviados, nuevos)
+    def set_inbox(self, mensajes):
+        # muestra_avatar, muestra_texto, de, hora, mensaje, Oik, avatar, leido, fav
+        self.inbox_store.clear()
+        self.__menAdd(self.inbox_store, mensajes, False)
+        
+    def new_inbox(self, mensajes):
+        pass
+        
+    def set_outbox(self, mensajes):
+        # muestra_avatar, muestra_texto, de, hora, mensaje, Oik, avatar, leido
+        self.outbox_store.clear()
+        self.__menAdd(self.outbox_store, mensajes, False)
+        
+    def new_outbox(self, mensajes):
+        pass
 
-    def __men_list(self, store, mensajes,enviados=False, pre=False):
-        '''Agrega los mensajes (recividos y enviados) al store especificado
-            # avatar, Label, de, hora, mensaje, okid, avatar, leido, fav, enviado
-        '''
-
+    def __menAdd(self, store, mensajes, pre=False):
+        '''Agrega los mensajes al store especificado'''
         imgcache = {"estado0" : gtk.gdk.pixbuf_new_from_file(\
                         self.__Config.THEME_PATH + "new.png"),
                     "estado1" : gtk.gdk.pixbuf_new_from_file(\
                         self.__Config.THEME_PATH + "leido_pc.png"),
                     "estado2" : gtk.gdk.pixbuf_new_from_file(\
                         self.__Config.THEME_PATH + "leido_cel.png")}
-        for mensaje in mensajes:
-            
-            mensaje0 = "Para: %s" % mensaje[0] if (enviados) \
-                                                else "%s" % mensaje[0]             
+        for mensaje in mensajes:            
             texto = '%s' +\
                 '\n<span size="small" foreground="#A4A4A4">%s</span>'
-            texto = texto % (mensaje0, mensaje[2].replace("\n",""))
-            if mensaje[5] == "0":
-                #print "0"
+            texto = texto % (mensaje[0], mensaje[2].replace("\n",""))
+            if mensaje[5] == "0": # Mensaje Nuevo
                 estado = imgcache["estado0"]
                 texto = '<span background="#F7BE81">%s</span>' % texto
-            elif mensaje[5] == "1":
-                #print "1"
+            elif mensaje[5] == "1": # Leido Pc
                 estado = imgcache["estado1"]
-            else:
-                #print "2"
+            else: # Leido Cel
                 estado = imgcache["estado2"]
-            try:
-                avatarG = imgcache[mensaje[4]][0]
-                avatarM = imgcache[mensaje[4]][1]
-            except:                
-                #imgavatarm= self.__Okeyko.pagina("/upload/imagenes/galeria/g/" + mensaje[4])
-                imgavatarm= self.__Okeyko.avatar(mensaje[4])
-                avatar =  gtk.gdk.PixbufLoader()
-                avatar.write(imgavatarm)
-                avatarG = avatar.get_pixbuf()
-                avatar.close()
-                avatarG_w = avatarG.get_width()
-                avatarG_h = avatarG.get_height()
-                avatarM_h = 40 * avatarG_h / avatarG_w
-                avatarM = avatarG.scale_simple(40,avatarM_h,gtk.gdk.INTERP_NEAREST)
-                #avatarM_sub = avatarM.subpixbuf(avatarM.get_width() - 15, avatarM.get_height() - 15, 15, 15)
-                #avatarM_sub.fill(0x0000cc22)
-                #print gtk.gdk.pixbuf_new_from_file(paths.DEFAULT_THEME_PATH + "new.png").pixel_array
-                #avatarM_sub.pixel_array[:] = gtk.gdk.pixbuf_new_from_file(paths.DEFAULT_THEME_PATH + "new.png").get_pixels_array()
-                imgcache[mensaje[4]] = [avatarG, avatarM]
+            avatar =  gtk.gdk.PixbufLoader()
+            avatar.write(mensaje[4])
+            avatarG = avatar.get_pixbuf()
+            avatar.close()
+            avatarG_w = avatarG.get_width()
+            avatarG_h = avatarG.get_height()
+            avatarM_h = 40 * avatarG_h / avatarG_w
+            avatarM = avatarG.scale_simple(40,avatarM_h,gtk.gdk.INTERP_NEAREST)
             gtk.gdk.threads_enter()
             #print estado
             avatarM = self.add_status(avatarM, estado, avatarM.get_width() - 15, avatarM.get_height() - 15)
             gtk.gdk.threads_leave()
-            row = [avatarM, texto, mensaje[0], \
-                    mensaje[1], mensaje[2], mensaje[3], avatarG, \
-                    int(mensaje[5])]
-            if enviados != True:
-                row.append(mensaje[6])
-                row.append(mensaje[7])
+            row = [avatarM, texto]
+            for c in mensaje:
+                row.append(c)
             if pre:
                 store.prepend(row)
             else:
                 store.append(row)
         return
+        
     def add_status(self, pixbuf, adpixbuf, posx, posy):
         pixmap,_ = pixbuf.render_pixmap_and_mask()
         gc = pixmap.new_gc()
         pixmap.draw_pixbuf(gc, adpixbuf, 0, 0, posx, posy)
-        return pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(), 0, 0, 0, 0, -1, -1)        
+        return pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(), 0, 0, 0, 0, -1, -1)
+        
+    def estadoSet(self, widget, estado, *args, **kargs):
+        self.__Okeyko.estadoSet(estado)
 
     def redactar_ventana(self, widget=None, destinatario=None, data=None):
         ''' Callback que crea la ventana para redactar mensajes'''
@@ -502,8 +490,7 @@ class mainWindow(gtk.Window):
 
     def mostrarmensaje(self, widget, row, col):
         model = widget.get_model()
-        MensajeVen.MensajeVen(model[row][5], model[row][2], model[row][3],\
-                                model[row][4], model[row][6])
+        MensajeVen.MensajeVen(model, row, self.__Control)
         if model[row][7] == 0:
             self.__queueToServer.put((self.__Okeyko.set_leido, (model[row][5],),\
                                 {}, self.Nulo, (), {}))

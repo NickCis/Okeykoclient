@@ -76,6 +76,10 @@ class actmen(threading.Thread):
         #self.start()
         
     def setgui(self, MainWindow, Notificaciones=None):
+        '''MainWindow debe tener funciones:
+            set_inbox() new_inbox()
+            set_outbox() new_outbox()
+             '''
         self.__MainWindow = MainWindow
         self.__Notifications = Notificaciones
         
@@ -88,19 +92,35 @@ class actmen(threading.Thread):
         #    self.__Condition.wait()
         #    self.__Condition.release()
 
-        mensajes = self.__Okeyko.bandeja()
+        inbox = self.__Okeyko.inbox()[:]
         try:
-            self.__MinId = mensajes[0][3]
+            self.__MinId = inbox[0][3]
         except:
             pass
-        mensajesE = self.__Okeyko.salida()
+        imgcache = {}
+        for inb in inbox:
+            try:
+                avatar = imgcache[inb[4]]
+            except:
+                avatar = self.__Okeyko.avatar(inb[4])
+                imgcache.update({inb[4] : avatar})
+            inb[4] = avatar
 
-        #self.__Cola.put((self.__MainWindow.mensajes, ((mensajes), False), {}))
-        #self.__Cola.put((self.__MainWindow.mensajes, ((mensajesE), True), {}))
+        outbox = self.__Okeyko.outbox()
+        for outb in outbox:
+            try:
+                avatar = imgcache[outb[4]]
+            except:
+                avatar = self.__Okeyko.avatar(outb[4])
+                imgcache.update({outb[4] : avatar})
+            outb[4] = avatar
+
+        self.__Cola.put((self.__MainWindow.set_inbox, [inbox], {}))
+        self.__Cola.put((self.__MainWindow.set_outbox, [outbox], {}))
 
         #gtk.gdk.threads_enter()
-        self.__MainWindow.mensajes((mensajes), False)  
-        self.__MainWindow.mensajes((mensajesE), True)
+        #self.__MainWindow.set_inbox(inbox)  
+        #self.__MainWindow.set_outbox(outbox)
         #gtk.gdk.threads_leave()
 
         while True:

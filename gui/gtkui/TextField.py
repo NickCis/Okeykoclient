@@ -1,3 +1,13 @@
+# This file is taken from emesene2 git.
+# 
+# Small changes were made to make it work with Okeykoclient by NicoCis
+#
+# Taken from emesene:
+#    Emesene is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+
 import gtk
 import pango
 import gobject

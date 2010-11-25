@@ -6,8 +6,14 @@ import paths
 class MensajeVen(gtk.Window):
     ''' Ventana que muestra mensaje '''
 
-    def __init__(self, okid, para, hora, mensaje, avatar):
+    #def __init__(self, okid, para, hora, mensaje, avatar):
+    def __init__(self, model, row, Control):
         gtk.Window.__init__(self)
+        okid = model[row][5]
+        para = model[row][2]
+        hora = model[row][3]
+        mensaje = model[row][4]
+        avatar = model[row][6]
         self.set_default_size(300,300)
         self.set_title(para)
 
@@ -81,10 +87,14 @@ class MensajeVen(gtk.Window):
         #TVmensaje.set_wrap_mode(gtk.WRAP_WORD_CHAR)
 
         sw.add(TVmensaje)
-        avatar_w = avatar.get_width()
-        avatar_h = avatar.get_height()
+        avatarPixLoad =  gtk.gdk.PixbufLoader()
+        avatarPixLoad.write(mensaje[4])
+        avatarT = avatarPixLoad.get_pixbuf()
+        avatarPixLoad.close()
+        avatar_w = avatarT.get_width()
+        avatar_h = avatarT.get_height()
         avatarN_h = 100 * avatar_h / avatar_w
-        avatarN = avatar.scale_simple(100,avatarN_h,gtk.gdk.INTERP_NEAREST)
+        avatarN = avatarT.scale_simple(100,avatarN_h,gtk.gdk.INTERP_NEAREST)
         Imagen = gtk.image_new_from_pixbuf(avatarN)
         UpperHbox.pack_start(Imagen)
 
@@ -115,5 +125,3 @@ def parse_emot(text, dict=None):
                     '(ip)': 'emot-playa.png',\
                     '(Pi)': 'emot-burger.png',\
                     '(L)': 'emot-corazon.gif' }
-    
-        
