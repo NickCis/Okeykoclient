@@ -567,7 +567,7 @@ class MainClass:
 		# TODO: Agregar soporte de themes
         #self.theme = controller.theme
         self.Config = Control['Config']
-        self.updateConfig()
+        #self.updateConfig()
 
 
     def updateConfig(self):
@@ -576,23 +576,24 @@ class MainClass:
             closePixmap = None, callback = None, params = None,
             userPixbuf = None, font = None, color = None, duration= 7'''
 
-        self.corner = self.Config.getNotConfig('corner')
-        self.scroll = self.Config.getNotConfig('scroll')
-        self.offset = self.Config.getNotConfig('offset')
-        self.height = self.Config.getNotConfig('height')
-        self.width = self.Config.getNotConfig('width')
-        self.font = self.Config.getNotConfig('font')
-        self.color = self.Config.getNotConfig('color')
+        self.corner = self.Config.user['notCorner']
+        self.scroll = self.Config.user['notScroll']
+        self.offset = self.Config.user['notOffset']
+        self.height = self.Config.user['notHeight']
+        self.width = self.Config.user['notWidth']
+        self.font = self.Config.user['notFont']
+        self.color = self.Config.user['notColor']
         #self.NotiCol = '#%02X%02X%02X' % (00, 00, 00)
-        self.NotiCol = self.Config.getNotConfig('color')
+        self.NotiCol = self.Config.user['notColor']
         #NotiPixmapF = paths.DEFAULT_THEME_PATH + "guif.png"
-        NotiPixmapF = self.Config.getNotConfig('pixmap')
+        NotiPixmapF = self.Config.pathFile('Not-guif.png')
         self.NotiPixmap, NotiPMask = gtk.gdk.pixbuf_new_from_file(NotiPixmapF).render_pixmap_and_mask()
-        NotiPixmapCloseF = self.Config.getNotConfig('closePixmap')
+        NotiPixmapCloseF = self.Config.pathFile('Not-close.png')
         self.NotiClosePixmap = gtk.gdk.pixbuf_new_from_file(NotiPixmapCloseF)
         self.Noti = NotificationManager()        	
 
     def newNotification(self,string,dura=7):
+        self.updateConfig()
         self.Noti.newNotification(string, self.corner, self.scroll, self.NotiPixmap, self.NotiClosePixmap, color=self.NotiCol, duration=dura)
         return
 

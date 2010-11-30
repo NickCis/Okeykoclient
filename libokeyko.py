@@ -148,7 +148,7 @@ class okeyko:
             hora = li.find('td',{'align':'right'}).text
             mensaje = li.findAll('br')[5].next
             Oik = li.label['for']
-            avatar = li.img['src'][li.img['src'].rfind('/'):]
+            avatar = li.img['src'][li.img['src'].rfind('/')+1:]
             leido = li.findAll('div',{'style': ' font-size:11px; color:#666;' \
                     })[0].contents[0]
             leido = 1 #TODO: Arreglar leido
@@ -170,6 +170,10 @@ class okeyko:
     def userinfo(self):
         if self.__conectado != True: return
         return self.__usuario, self.__avatar, self.__estado
+
+    def getUser(self):
+        if self.__conectado != True: return
+        return self.__usuario
 
     def inbox(self):
         ''' Devuelve los mensajes de inbox en una lista

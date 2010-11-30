@@ -17,3 +17,4 @@ def gtk_main(Control):
     MainWindow.connect('redraw-done', Control['ActMen'].thStart)
     gobject.timeout_add(500, Control['queueManager'], Control['queueToGui'])
     gtk.main()
+

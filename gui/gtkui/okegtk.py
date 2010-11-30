@@ -84,7 +84,7 @@ class mainWindow(gtk.Window):
 
     def conectar(self, widget, user, contra):
         ''' Callback para conectar '''
-        PBanim = gtk.gdk.PixbufAnimation(self.__Config.THEME_PATH + "loading.gif")
+        PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
         anim = gtk.Image()
         anim.set_from_animation(PBanim)
         label = gtk.Label("\n Conectando \n")
@@ -298,11 +298,11 @@ class mainWindow(gtk.Window):
     def __menAdd(self, store, mensajes, pre=False):
         '''Agrega los mensajes al store especificado'''
         imgcache = {"estado0" : gtk.gdk.pixbuf_new_from_file(\
-                        self.__Config.THEME_PATH + "new.png"),
+                        self.__Config.pathFile("theme-new.png")),
                     "estado1" : gtk.gdk.pixbuf_new_from_file(\
-                        self.__Config.THEME_PATH + "leido_pc.png"),
+                        self.__Config.pathFile("theme-leido_pc.png")),
                     "estado2" : gtk.gdk.pixbuf_new_from_file(\
-                        self.__Config.THEME_PATH + "leido_cel.png")}
+                        self.__Config.pathFile("theme-leido_cel.png"))}
         for mensaje in mensajes:            
             texto = '%s' +\
                 '\n<span size="small" foreground="#A4A4A4">%s</span>'
@@ -315,7 +315,7 @@ class mainWindow(gtk.Window):
             else: # Leido Cel
                 estado = imgcache["estado2"]
             avatar =  gtk.gdk.PixbufLoader()
-            avatar.write(mensaje[4])
+            avatar.write(self.__Config.avatarLoad(mensaje[4])[1])
             avatarG = avatar.get_pixbuf()
             avatar.close()
             avatarG_w = avatarG.get_width()
@@ -323,7 +323,6 @@ class mainWindow(gtk.Window):
             avatarM_h = 40 * avatarG_h / avatarG_w
             avatarM = avatarG.scale_simple(40,avatarM_h,gtk.gdk.INTERP_NEAREST)
             gtk.gdk.threads_enter()
-            #print estado
             avatarM = self.add_status(avatarM, estado, avatarM.get_width() - 15, avatarM.get_height() - 15)
             gtk.gdk.threads_leave()
             row = [avatarM, texto]
@@ -393,7 +392,7 @@ class mainWindow(gtk.Window):
     def mandarmensaje(self, widget, widpara, widmensaje):
         '''Callback para mandar mensaje '''
         Hbox = gtk.HBox()
-        PBanim = gtk.gdk.PixbufAnimation(self.__Config.THEME_PATH + "loading.gif")
+        PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
         anim = gtk.Image()
         anim.set_from_animation(PBanim)
         label = gtk.Label("Enviando")
@@ -496,7 +495,7 @@ class mainWindow(gtk.Window):
                                 {}, self.Nulo, (), {}))
             texto = model[row][1].replace(" background=\"#F7BE81\"","")
             pixbuf = self.add_status(model[row][0], gtk.gdk.pixbuf_new_from_file(\
-                        self.__Config.THEME_PATH + "leido_pc.png"),\
+                        self.__Config.pathFile("theme-leido_pc.png")),\
                         model[row][0].get_width() - 15,\
                         model[row][0].get_height() - 15)
             model.set_value(model.get_iter_from_string("%s:0" % (row)),0,pixbuf)

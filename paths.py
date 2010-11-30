@@ -29,7 +29,7 @@ if (os.name != 'nt'):
 else:
     HOME_DIR = os.path.expanduser("~").decode(sys.getfilesystemencoding()) + DIR_SEP
 
-CONF_DIR_NAME = '.config' + DIR_SEP + 'okeykoclient' + DIR_SEP
+CONF_DIR_NAME = '.config' + DIR_SEP + 'Okeykoclient0' + DIR_SEP
 CONFIG_DIR = HOME_DIR + CONF_DIR_NAME
 CONFIG_DIR_GLOBAL = APP_PATH + 'config' + DIR_SEP
     

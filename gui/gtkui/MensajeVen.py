@@ -13,7 +13,8 @@ class MensajeVen(gtk.Window):
         para = model[row][2]
         hora = model[row][3]
         mensaje = model[row][4]
-        avatar = model[row][6]
+        avatarName = model[row][6]
+        avatar = Control['Config'].avatarLoad(avatarName, False)[1]
         self.set_default_size(300,300)
         self.set_title(para)
 
@@ -87,10 +88,11 @@ class MensajeVen(gtk.Window):
         #TVmensaje.set_wrap_mode(gtk.WRAP_WORD_CHAR)
 
         sw.add(TVmensaje)
-        avatarPixLoad =  gtk.gdk.PixbufLoader()
-        avatarPixLoad.write(mensaje[4])
-        avatarT = avatarPixLoad.get_pixbuf()
-        avatarPixLoad.close()
+        #avatarPixLoad =  gtk.gdk.PixbufLoader()
+        #avatarPixLoad.write(avatar)
+        #avatarT = avatarPixLoad.get_pixbuf()
+        #avatarPixLoad.close()
+        avatarT = gtk.gdk.pixbuf_new_from_file(avatar)
         avatar_w = avatarT.get_width()
         avatar_h = avatarT.get_height()
         avatarN_h = 100 * avatar_h / avatar_w

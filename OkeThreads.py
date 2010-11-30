@@ -70,7 +70,8 @@ class actmen(threading.Thread):
         self.__Okeyko = Control['Okeyko']
         #self.__Condition = condition
         self.__Condition = None
-        self.__Sound = Control['Sound']        
+        self.__Sound = Control['Sound']
+        self.__Config = Control['Config']
         self.__MinId = None
         self.setDaemon(True)
         #self.start()
@@ -91,6 +92,7 @@ class actmen(threading.Thread):
         #    self.__Condition.acquire()
         #    self.__Condition.wait()
         #    self.__Condition.release()
+        self.__Config.setCurrentUser(self.__Okeyko.getUser())
 
         inbox = self.__Okeyko.inbox()[:]
         try:
@@ -102,18 +104,24 @@ class actmen(threading.Thread):
             try:
                 avatar = imgcache[inb[4]]
             except:
-                avatar = self.__Okeyko.avatar(inb[4])
+                avE, avatar = self.__Config.avatarLoad(inb[4])
+                if not avE:
+                    avatar = self.__Okeyko.avatar(inb[4])
+                    self.__Config.avatarSave(inb[4], avatar)
                 imgcache.update({inb[4] : avatar})
-            inb[4] = avatar
+            #inb[4] = avatar
 
         outbox = self.__Okeyko.outbox()
         for outb in outbox:
             try:
                 avatar = imgcache[outb[4]]
             except:
-                avatar = self.__Okeyko.avatar(outb[4])
+                avE, avatar = self.__Config.avatarLoad(inb[4])
+                if not avE:
+                    avatar = self.__Okeyko.avatar(outb[4])
+                    self.__Config.avatarSave(inb[4], avatar)
                 imgcache.update({outb[4] : avatar})
-            outb[4] = avatar
+            #outb[4] = avatar
 
         self.__Cola.put((self.__MainWindow.set_inbox, [inbox], {}))
         self.__Cola.put((self.__MainWindow.set_outbox, [outbox], {}))

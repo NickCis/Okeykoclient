@@ -15,6 +15,7 @@ def main():
     queueManager = OkeThreads.queue_manager
     Okeyko = libokeyko.okeyko()
     Conf = Config.Main()
+    Conf.writeGlobalConfig()
     Sonido = Sound.Sound(Conf)
     Control = { 'queueToGui' : queueToGui, 'queueToServer' : queueToServer, \
                 'Okeyko' : Okeyko, 'Config' : Conf, 'Sound' : Sonido, \
