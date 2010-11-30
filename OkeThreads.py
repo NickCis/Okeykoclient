@@ -99,29 +99,23 @@ class actmen(threading.Thread):
             self.__MinId = inbox[0][3]
         except:
             pass
-        imgcache = {}
-        for inb in inbox:
-            try:
-                avatar = imgcache[inb[4]]
-            except:
-                avE, avatar = self.__Config.avatarLoad(inb[4])
-                if not avE:
-                    avatar = self.__Okeyko.avatar(inb[4])
-                    self.__Config.avatarSave(inb[4], avatar)
-                imgcache.update({inb[4] : avatar})
-            #inb[4] = avatar
+
+        iterDownAvatar(inbox, self.__Config.avatarLoad, self.__Okeyko.avatar,\
+                        self.__Config.avatarSave)
+        #for inb in inbox:
+        #    avE, avatar = self.__Config.avatarLoad(inb[4])
+        #    if not avE:
+        #        avatar = self.__Okeyko.avatar(inb[4])
+        #        self.__Config.avatarSave(inb[4], avatar)
 
         outbox = self.__Okeyko.outbox()
-        for outb in outbox:
-            try:
-                avatar = imgcache[outb[4]]
-            except:
-                avE, avatar = self.__Config.avatarLoad(inb[4])
-                if not avE:
-                    avatar = self.__Okeyko.avatar(outb[4])
-                    self.__Config.avatarSave(inb[4], avatar)
-                imgcache.update({outb[4] : avatar})
-            #outb[4] = avatar
+        iterDownAvatar(outbox, self.__Config.avatarLoad, self.__Okeyko.avatar,\
+                        self.__Config.avatarSave)
+        #for outb in outbox:
+        #    avE, avatar = self.__Config.avatarLoad(inb[4])
+        #    if not avE:
+        #        avatar = self.__Okeyko.avatar(outb[4])
+        #        self.__Config.avatarSave(inb[4], avatar)
 
         self.__Cola.put((self.__MainWindow.set_inbox, [inbox], {}))
         self.__Cola.put((self.__MainWindow.set_outbox, [outbox], {}))
@@ -132,21 +126,29 @@ class actmen(threading.Thread):
         #gtk.gdk.threads_leave()
 
         while True:
-            time.sleep(30)
-            mensajes = self.__Okeyko.badeja_nuevos(self.__MinId)
-            try: #Si no hay mensajes nuevos devuelve error
-                self.__MinId = mensajes[0][3] 
-                
-                self.__Cola.put((self.__MainWindow.mensajes, ((mensajes), False, True,), {}))
+            time.sleep(15) #TODO: evaluar el tiempo. Convertirlo a config
+            #mensajes = self.__Okeyko.badeja_nuevos(self.__MinId)
+            mensajes = self.__Okeyko.inboxNew(self.__MinId)
+            if mensajes != False:
+                self.__MinId = mensajes[0][3]
+                iterDownAvatar(mensajes, self.__Config.avatarLoad,\
+                    self.__Okeyko.avatar, self.__Config.avatarSave)
+                self.__Cola.put((self.__MainWindow.new_inbox, [mensajes], {}))
                 # TODO: ponerlo en forma que sea multi plataforma (usando modulo os)
                 if self.__Sound != None:
                     self.__Cola.put((self.__Sound.play_path, \
                                         (paths.DEFAULT_THEME_PATH + \
                                         "new.wav",), {}))                               
                 #self.__MainWindow.blink()
-                if self.__Notification != None:
-                    self.__Cola.put((self.__Notification.newNotification, \
+                if self.__Notifications != None:
+                    self.__Cola.put((self.__Notifications.newNotification, \
                                         ("Mensaje Nuevo", 0), {}))
-                    #notificaciones.newNotification("Mensaje Nuevo", 0, 1, color=col)
-            except:
-                pass
+                   #notificaciones.newNotification("Mensaje Nuevo", 0, 1, color=col)
+                
+def iterDownAvatar(store, Load, Down, Save):
+    for st in store:
+        avE, avatar = Load(st[4], False)
+        if not avE:
+            avatar = Down(st[4])
+            Save(st[4], avatar)
+    

@@ -146,6 +146,7 @@ class mainWindow(gtk.Window):
         userNickHbox.pack_start(userNick, False, False)
         userInVbox.pack_start(userNickHbox, False, False)
         userEstE = TextField.TextField('','', False)
+        userEstE.set_size_request(200,-1)
         userEstE.text = userEstado
         userEstE.connect("text-changed", self.estadoSet )
         userInVbox.pack_start(userEstE, True, True)
@@ -285,6 +286,8 @@ class mainWindow(gtk.Window):
         self.__menAdd(self.inbox_store, mensajes, False)
         
     def new_inbox(self, mensajes):
+        mensajes.reverse()
+        self.__menAdd(self.inbox_store, mensajes, True)
         pass
         
     def set_outbox(self, mensajes):
@@ -293,6 +296,8 @@ class mainWindow(gtk.Window):
         self.__menAdd(self.outbox_store, mensajes, False)
         
     def new_outbox(self, mensajes):
+        mensajes.reverse()
+        self.__menAdd(self.outbox_store, mensajes, True)
         pass
 
     def __menAdd(self, store, mensajes, pre=False):

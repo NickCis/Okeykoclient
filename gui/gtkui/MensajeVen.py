@@ -70,8 +70,8 @@ class MensajeVen(gtk.Window):
         sw.set_policy(gtk.POLICY_AUTOMATIC , gtk.POLICY_AUTOMATIC)
         UpperHbox.pack_start(sw)
 
-        fecha = hora[:hora.find("//") - 1]
-        hora = hora[hora.find("//") + 3:]
+        fecha = hora[:hora.find("|")]
+        hora = hora[hora.find("|") + 1:]
         #texto = "%s\n%s:\n    [%s] %s" % (fecha, para, hora, mensaje)
         texto = "<div>%s<br/>\n<span style='font-weight: bold'>%s:</span>" +\
             "<br/><span syle='text-indent: 2em'>[%s] %s</span></div>"

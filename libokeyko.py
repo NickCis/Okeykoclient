@@ -166,6 +166,7 @@ class okeyko:
             #leido = out.find('div',{'id':'herramientas'}).replace("| Eliminar",'')
             leido = 1 #TODO: Arreglar leido
             self.__outbox.append([para, hora, mensaje, Oid, avatar, leido])
+        self.agenda_lista()
 
     def userinfo(self):
         if self.__conectado != True: return
@@ -181,6 +182,36 @@ class okeyko:
         if self.__conectado != True: return
         if self.__inbox == False: return
         return [list(a) for a in self.__inbox]
+        
+    def inboxNew(self, minId=0):
+        url = "/nv02/nuevos.php"
+        pag = self.pagina(url).strip()
+        #print pag
+        if pag == "</form >":
+            return False
+        pag = BS(unescape(unicode(pag, 'latin-1')))
+        tables = pag.findAll('table')
+        tablesN = len(tables) / 3
+        inboxNew = []
+        for i in range(0, tablesN):
+            table = tables[i * 3]
+            de = table.findAll('a')[1].text
+            de = de[de.find(">")+1:]
+            hora = table.find('td',{'align':'right'}).text
+            mensaje = table.findAll('br')[6].next.string.strip()
+            Oik = table.find('div',{'style':'display:none; padding:5px; '
+                + 'margin-left:30px;margin-right:30px;background-color:'
+                + '#F2F2F2'})['id'].replace('_','')
+            avatar = table.img['src']
+            avatar = avatar[avatar.rfind('/')+1:]
+            leido = table.find('div', \
+                {'style':' font-size:11px; color:#666;'}).text
+            leido = 0 #TODO: Arreglar leido
+            fav = 0 #TODO: Get Favorito
+            inboxNew.append([de, hora, mensaje, Oik, avatar, leido, fav])
+        if int(inboxNew[0][3]) <= int(minId):
+            return False
+        return inboxNew
 
     def outbox(self):
         ''' Devuelve los mensajes de outbox en una lista
@@ -188,6 +219,8 @@ class okeyko:
         if self.__conectado != True: return
         if self.__inbox == False: return
         return [list(a) for a in self.__outbox]
+        
+
 
     def badeja_nuevos(self, minid= None):
         pass
@@ -268,7 +301,7 @@ class okeyko:
             for name in self.__agenda_lista:
                 ret.append(name[0])
             return ret
-        return list(self.agenda_lista)
+        return self.agenda_lista
 
     def inbox_bor(self, menid):
         if (type(menid) == tuple) | (type(menid) == list):
