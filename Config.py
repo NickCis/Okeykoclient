@@ -2,11 +2,13 @@ import os
 import imp
 import sys
 import shutil
+import base64
 
 import paths
 
 
 DEFAULT_GLOBAL_CONFIG = {
+    'mainWindowGeometry': '410x1100+1461+25',
     'theme': 'default',
     'rememberMe': True,
     'rememberMyPassword': False,
@@ -15,6 +17,7 @@ DEFAULT_GLOBAL_CONFIG = {
 
 
 DEFAULT_USER_CONFIG = {
+    'menWindowGeometry': '410x300+1461+25',
     'themeEmot': 'default',
     'themeSound': 'default',
     'themeNot': 'default',
@@ -37,6 +40,7 @@ class Main:
         self.currentUser = ''
         self.glob = {}
         self.user = {}
+        self.userList = {}
 
         # This dict is a bit different from the two others
         # It's not a key : value dict but a plugin_name : [ key : value ] dict
@@ -60,8 +64,14 @@ class Main:
                 DEFAULT_GLOBAL_CONFIG)
             self.writeGlobalConfig()
 
-        self.readGlobalConfig() 
-        
+        self.readGlobalConfig()
+
+        if _mkfile('Users Save file', paths.CONFIG_DIR, 'users.dat'):
+            self.userList = UserList(self, self.writeUserList)
+            self.writeUserList()
+
+        self.readUserList()
+
     def readGlobalConfig(self):
         '''read the config file and create a dictionarie with key and value
         of all the key=value\n in the config file'''
@@ -106,6 +116,75 @@ class Main:
             conf.close()
         except Exception, e:
             print "exception writing config:\n %s" % e
+    # -- USER LIST -- #
+    def writeUserList(self):
+        '''write the UserList to the file, overwrite current config file'''
+        try:
+            conf = open(paths.CONFIG_DIR + '/users.dat', 'w')
+            for k, v in self.userList:
+                if type(v) == bool:
+                    conf.write(k + ':' + '\n')
+                else:
+                    conf.write(k + ':' + base64.b64encode(str(v)) + '\n')
+
+            conf.close()
+        except Exception, e:
+            print "exception writing userList:\n %s" % e
+            
+    def readUserList(self):
+        '''read the user list file and create a dictionarie with key and value
+        of all the nick=pass\n in the config file'''
+
+        UserListDict = {}
+        conf = None
+        try:
+            conf = open(paths.CONFIG_DIR + '/users.dat', 'r')
+            string = conf.read()
+
+            for i in string.splitlines():
+                if i != '':
+                    delim = i.find(':')
+                    key = i[:delim]
+                    value = base64.b64decode(i[delim+1:])
+                    if str(value) != '0':
+                        UserListDict[key] = value
+                    else:
+                        UserListDict[key] = False
+            conf.close()
+        except:
+            if conf:
+                conf.close()
+                
+        self.userList = UserList(self, self.writeUserList, UserListDict)
+    # -- USER LIST -- #
+    # -- USER CONFIG -- #
+    def setCurrentUser(self, user):
+        ''' Create and/or read needed file for user config
+        /!\ This function MUST be called before any set/getUserConfig'''
+
+        #self.currentUser = email.replace('@', '_').replace('.', '_')
+        self.currentUser = user.lower()
+        self.glob['lastLoggedAccount'] = user
+
+
+        if user != '':
+
+            _mkdir('User config dir', paths.CONFIG_DIR, self.currentUser)
+
+            if _mkfile('Config file created: ', paths.CONFIG_DIR, \
+               self.currentUser, 'config'):
+                self.user = ConfigDict(self, self.writeUserConfig, \
+                    DEFAULT_USER_CONFIG)
+                self.writeUserConfig()
+
+            #_mkdir('', paths.CONFIG_DIR, self.currentUser, 'logs')
+            #_mkdir('', paths.CONFIG_DIR, self.currentUser, 'cache')
+            _mkdir('', paths.CONFIG_DIR, self.currentUser, 'avatars')
+            #_mkdir('', paths.CONFIG_DIR, self.currentUser, 'custom_emoticons')
+            self.readUserConfig()
+
+        else:
+            self.user = {}
 
     # -- USER CONFIG -- #
     def setCurrentUser(self, user):
@@ -301,6 +380,91 @@ class ConfigDict(dict):
     def __iter__(self):
         '''for key, value in configDict'''
         return self.store.iteritems()
+
+class UserList(dict):
+    '''A list that handles saves users and passwords'''
+
+    def __init__(self, config, writeFunc, store=None):
+        self.config = config
+        self.writeFunc = writeFunc
+
+        if store == None:
+            store = {}
+
+        self.store = {}
+        for key, value in store.iteritems():
+            if type(value) == bool:
+                self.store[key] = str(int(value))
+            else:
+                self.store[key] = str(value)
+
+    def __repr__(self):
+        #return '<UserList based on ' + repr(store) + '>'
+        return '<UserList for Okeykoclient Users/Pass>'
+
+    #def getDefault(self, name):
+    #    if name in self.defaults:
+    #        return self.defaults[name]
+    #    else:
+    #        return ''
+
+    def __getitem__(self, name):
+    #    '''if nick is given returns password or false
+    #       if number is given returns nick'''
+
+        if name in self.store:
+            return self.store[name]
+    #        newType = type(self.getDefault(name))
+    #        if newType == bool:
+    #            if str(self.store[name]).lower() in ('true', 'false'):
+    #                # workaround for some buggy configs..
+    #                boolValue = (str(self.store[name]).lower() == 'true')
+    #                self.store[name] = str(int(boolValue))
+    #                return boolValue
+    #            else:
+    #                try:
+    #                    # >>> int('0') == True
+    #                    return bool(int(self.store[name]))
+    #                except ValueError:
+    #                    return self.getDefault(name)
+    #        else:
+    #            try:
+    #                return newType(self.store[name])
+    #            except ValueError:
+    #                return self.getDefault(name)
+    #    else:
+    #        #emesenelib.common.debug('Config value was not found: ' + str(name))
+    #        print 'Config value was not found: %s' % str(name)
+    #        return self.getDefault(name)
+
+    def __setitem__(self, name, value):
+        '''sets a config key "name" to the string "value", emits
+        callbacks and writes config'''
+
+        if type(value) == bool:
+            value = str(int(value))
+        else:
+            value = str(value)
+
+        oldValue = None
+        if name in self.store:
+            oldValue = self.store[name]
+
+        self.store[name] = value
+
+        #self.config.emit('change::' + name, value, oldValue)
+        self.writeFunc() # TODO: config transactions?
+
+    def __contains__(self, name):
+        if name in self.store:
+            return True
+        else:
+            return False   
+
+    def __iter__(self):
+        '''for key, value in configDict'''
+        return self.store.iteritems()
+
 
 
 

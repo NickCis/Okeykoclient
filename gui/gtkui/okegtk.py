@@ -26,10 +26,11 @@ class mainWindow(gtk.Window):
         # create a new window
         #self.mainWindow = gtk.Window(gtk.WINDOW_TOPLEVEL)
         gtk.Window.__init__(self)
-        self.set_position(gtk.WIN_POS_NONE)
-        self.connect("delete_event", self.showHide)
+        #self.set_position(gtk.WIN_POS_NONE)
         #self.mainWindow.set_size_request(200, 100)
-        self.set_default_size(300, 700)
+        #self.set_default_size(300, 700)
+        self.parse_geometry(self.__Config.glob['mainWindowGeometry'])
+        self.connect("delete_event", self.showHide)
         self.set_title("Okeyko ::: Cliente")
         
         vbox = gtk.VBox(False, 0)
@@ -43,7 +44,14 @@ class mainWindow(gtk.Window):
 
         entry = gtk.Entry()
         entry.set_max_length(50)
-        hentry.pack_start(entry, True, False, 0)        
+        hentry.pack_start(entry, True, False, 0)  
+        entryComp = gtk.EntryCompletion()
+        entry.set_completion(entryComp)
+        userListStore = gtk.ListStore (str, str)
+        for a, b in self.__Config.userList:
+            userListStore.append([a,'foto',])
+        entryComp.set_model (userListStore)
+        entryComp.set_text_column(0)
 
         hcontra = gtk.HBox(False, 0)
         vbox.pack_start(hcontra, False, False, 0)
@@ -54,24 +62,31 @@ class mainWindow(gtk.Window):
         contra = gtk.Entry()
         contra.set_max_length(50)
         contra.set_visibility(False)
-        contra.connect("activate", self.conectar, entry, contra)
         hcontra.pack_start(contra, True, False, 0)
 
-        hbox = gtk.HBox(False, 0)
-        vbox.pack_start(hbox, False, False, 0)
-                          
-        check = gtk.CheckButton("Editable")
-        hbox.pack_start(check, True, False, 0)
+        buttonBox = gtk.VBox(False, 0)
+        vbox.pack_start(buttonBox, False, False, 0)
+        
+        checkRe = gtk.CheckButton("Recordar Me")
+        buttonBox.pack_start(checkRe, True, False, 0)
         #check.connect("toggled", self.entry_toggle_editable, entry)
-        check.set_active(True)
+        checkRe.set_active(self.__Config.glob['rememberMe'])
     
-        check = gtk.CheckButton("Visible")
-        hbox.pack_start(check, True, False, 0)
+        checkRC = gtk.CheckButton("Recordar Password")
+        buttonBox.pack_start(checkRC, True, False, 0)
         #check.connect("toggled", self.entry_toggle_visibility, entry)
-        check.set_active(True)
+        checkRC.set_active(self.__Config.glob['rememberMyPassword'])
+
+        checkAL = gtk.CheckButton("Auto Login")
+        buttonBox.pack_start(checkAL, True, False, 0)
+        #check.connect("toggled", self.entry_toggle_visibility, entry)
+        checkAL.set_active(False)
 
         button = gtk.Button("Conectar")
-        button.connect("clicked", self.conectar, entry, contra)
+        contra.connect("activate", self.conectar, entry, contra,
+            (checkRe.get_active, checkRC.get_active, checkAL.get_active))
+        button.connect("clicked", self.conectar, entry, contra,
+            (checkRe.get_active, checkRC.get_active, checkAL.get_active))
         vbox.pack_start(button, False, False, 0)
         button.set_flags(gtk.CAN_DEFAULT)
         button.grab_default()
@@ -80,10 +95,43 @@ class mainWindow(gtk.Window):
         butsalir.connect("clicked", self.close_application)
         vbox.pack_start(butsalir, False, False, 0)
 
+        entry.connect('focus-out-event', self.entryUFocusOut,
+            contra, (checkRe.set_active, checkRC.set_active,
+            checkAL.set_active))
+        entryComp.connect('match-selected', self.seterCompletionEntry,
+            entry, contra, (checkRe.set_active, checkRC.set_active,
+            checkAL.set_active))
+
         self.show_all()
 
-    def conectar(self, widget, user, contra):
+    def seterCompletionEntry(self, completion, model, Iter, entry,
+                                                    contra, checks):
+        entry.set_text(model[Iter][0])
+        contra.grab_focus()
+
+    def entryUFocusOut(self, widget, event, contra, checks):
+        key = widget.get_text()
+        if key in self.__Config.userList:
+            if self.__Config.userList[key] != "0":
+                contra.set_text(self.__Config.userList[key])
+                checks[0](True)
+                checks[1](True)
+            else:
+                checks[0](True)
+                checks[1](False)
+        else:
+            contra.set_text('')
+            checks[1](False)    
+
+    def conectar(self, widget, user, contra, checks):
         ''' Callback para conectar '''
+        entry_text = user.get_text()
+        contra_text = contra.get_text()
+        if checks[0]():
+            if checks[1]():
+                self.__Config.userList[entry_text] = contra_text
+            else:
+                self.__Config.userList[entry_text] = False
         PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
         anim = gtk.Image()
         anim.set_from_animation(PBanim)
@@ -93,13 +141,12 @@ class mainWindow(gtk.Window):
         self.child.pack_start(label, False, False, 0)
         anim.show()
         label.show()
-        entry_text = user.get_text()
-        contra_text = contra.get_text()
         print "---- Conectando -----"
         self.__queueToServer.put((self.__Okeyko.login, (entry_text, contra_text), {}, self.post_conectar, (anim, label), {}))
 
     def post_conectar(self, arg, arg2):
         conectado, error = self.__Okeyko.conectado()
+        print conectado
         if conectado:
             self.redraw_ventana()
         else:
@@ -110,10 +157,9 @@ class mainWindow(gtk.Window):
 
     def showHide(self, widget=None, *args):
         '''Show or hide the main window'''
-        
 #        self.tray.set_blinking(False)
-
         if self.flags() & gtk.VISIBLE:
+            self.saveMainWindowGeometry()
             self.hide()
         else:
             self.deiconify()
@@ -145,9 +191,10 @@ class mainWindow(gtk.Window):
         userNick = gtk.Label("@%s" % userNick)
         userNickHbox.pack_start(userNick, False, False)
         userInVbox.pack_start(userNickHbox, False, False)
-        userEstE = TextField.TextField('','', False)
+        userEstE = TextField.TextField('','Contanos que estas pensando... compartelo con tus amigos!', True)
         userEstE.set_size_request(200,-1)
-        userEstE.text = userEstado
+        if userEstado != "":
+            userEstE.text = userEstado
         userEstE.connect("text-changed", self.estadoSet )
         userInVbox.pack_start(userEstE, True, True)
 
@@ -516,6 +563,14 @@ class mainWindow(gtk.Window):
         self.tray.tray.set_blinking(True)
 
     def close_application(self, widget, event=None, data=None):
+        self.saveMainWindowGeometry()
         gtk.main_quit()
         exit()
+
+    def saveMainWindowGeometry(self):
+        xPos, yPos = self.get_position()
+        wWin, hWin = self.get_size()
+        mainWinGeometry = "%sx%s+%s+%s" % (wWin, hWin, xPos, yPos)
+        if self.__Config.glob['mainWindowGeometry'] != mainWinGeometry:
+            self.__Config.glob['mainWindowGeometry'] = mainWinGeometry
 

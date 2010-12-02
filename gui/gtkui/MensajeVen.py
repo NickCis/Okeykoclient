@@ -9,13 +9,16 @@ class MensajeVen(gtk.Window):
     #def __init__(self, okid, para, hora, mensaje, avatar):
     def __init__(self, model, row, Control):
         gtk.Window.__init__(self)
+        self.__Config = Control['Config']
         okid = model[row][5]
         para = model[row][2]
         hora = model[row][3]
         mensaje = model[row][4]
         avatarName = model[row][6]
-        avatar = Control['Config'].avatarLoad(avatarName, False)[1]
-        self.set_default_size(300,300)
+        avatar = self.__Config.avatarLoad(avatarName, False)[1]
+        #self.set_default_size(300,300)
+        self.parse_geometry(self.__Config.user['menWindowGeometry'])
+        self.connect("delete_event", self.saveMenWindowGeometry)
         self.set_title(para)
 
         MainVbox = gtk.VBox(False,0)
@@ -101,6 +104,13 @@ class MensajeVen(gtk.Window):
         UpperHbox.pack_start(Imagen)
 
         self.show_all()
+
+    def saveMenWindowGeometry(self, *args, **kargs):
+        xPos, yPos = self.get_position()
+        wWin, hWin = self.get_size()
+        menWinGeometry = "%sx%s+%s+%s" % (wWin, hWin, xPos, yPos)
+        if self.__Config.user['menWindowGeometry'] != menWinGeometry:
+            self.__Config.user['menWindowGeometry'] = menWinGeometry
 
 def parse_emot(text, dict=None):
     if dict == None:

@@ -118,9 +118,8 @@ class okeyko:
         resp.close()
         if pag.find("Password o Usuario incorrecto") != -1: #Ok2.0
             self.__conectado = False
-            self.__conectado_result = pag #Ok2.0
-            print self.__conectado_result
-            #return
+            self.__conectado_result = BS(pag).text #Ok2.0
+            return
         self.__conectado = True if (pag.find("exitosamente")) else False #Ok2.0
         self.__conectado_result = BS(pag).text #Ok2.0
         print self.__conectado_result
@@ -139,7 +138,10 @@ class okeyko:
         pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
         avt = pag.find('img',{'title':'Usuario', 'class':'reflect rheight20'})['src']
         self.__avatar = self.avatar(avt[avt.rfind('/')+1:],'m')
-        self.__estado = pag.find('b',{'style':'color:#FFF;'}).text
+        try:
+            self.__estado = pag.find('b',{'style':'color:#FFF;'}).text
+        except:
+            self.__estado = ""
         lis = pag.findAll('li')
         self.__inbox = []
         for i in range(0, len(lis) - 4 ):
@@ -350,7 +352,7 @@ class okeyko:
         return pag
 
     def pagina(self,link,post=None):
-        if self.__conectado != True: return
+        #if self.__conectado != True: return
         clength = False if (post == None) else True
         link = "/%s" % link if ( link[0] != "/" ) else link
         #resp = download(self.__dom, link, post, False, self.__cookie)
