@@ -11,6 +11,9 @@ class mainWindow(gtk.Window):
         'redraw-done' :
             (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
                 ()),
+        'redraw-disconnect' :
+            (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+                ()),
     }
     def __init__(self, Control):
     #def __init__(self, okeyko, colaOut, notificaciones=None):
@@ -32,7 +35,12 @@ class mainWindow(gtk.Window):
         self.parse_geometry(self.__Config.glob['mainWindowGeometry'])
         self.connect("delete_event", self.showHide)
         self.set_title("Okeyko ::: Cliente")
-        
+        self.LoginWin()
+
+
+    def LoginWin(self):
+        if self.child:
+            self.remove(self.child)
         vbox = gtk.VBox(False, 0)
         self.add(vbox)
         
@@ -146,7 +154,6 @@ class mainWindow(gtk.Window):
 
     def post_conectar(self, arg, arg2):
         conectado, error = self.__Okeyko.conectado()
-        print conectado
         if conectado:
             self.redraw_ventana()
         else:
@@ -154,17 +161,6 @@ class mainWindow(gtk.Window):
             anim.destroy()
             label = arg2[1]
             label.set_text(error)
-
-    def showHide(self, widget=None, *args):
-        '''Show or hide the main window'''
-#        self.tray.set_blinking(False)
-        if self.flags() & gtk.VISIBLE:
-            self.saveMainWindowGeometry()
-            self.hide()
-        else:
-            self.deiconify()
-            self.show()
-        return True
 
     def redraw_ventana(self):
         '''Cambia la ventana despues de conectarse '''
@@ -256,6 +252,7 @@ class mainWindow(gtk.Window):
         mensajeslist = gtk.TreeView(self.inbox_store)
         mensajeslist.set_headers_visible(False)
         mensajeslist.connect("row-activated", self.mostrarmensaje)
+        mensajeslist.connect("button_press_event", self.popUpMenMenu, 'in')
 
         #crear Column
         columnPix = gtk.TreeViewColumn("Avatar")
@@ -326,6 +323,49 @@ class mainWindow(gtk.Window):
         #self.__men_list(self.mensajes_store, self.__Okeyko.bandeja())
         #self.__env_list(self.enviados_store, self.__Okeyko.salida())
 
+    def popUpMenMenu(self, widget, event, box):
+        if event.type == gtk.gdk.BUTTON_PRESS: # Single click
+            if event.button == 3: # Right Click - Show popup
+                self.popMenuBuilder(widget, box).popup(None, None, None,
+                    event.button, event.time)
+
+    def popMenuBuilder(self, treeView, box):
+        menu = gtk.Menu()
+        menuItemRes = gtk.MenuItem("Responder")
+        menuItemRes.connect('activate', self.popMenuCallb, 'res', treeView)
+
+        menuItemFav = gtk.MenuItem("Favoritos")
+        menuItemFav.connect('activate', self.popMenuCallb, 'fav', treeView)
+
+        menuItemAg = gtk.MenuItem("Agegar a Agenda")
+        menuItemAg.connect('activate', self.popMenuCallb, 'ag', treeView)
+
+        menuItemBor = gtk.ImageMenuItem( gtk.STOCK_DELETE )
+        if box == 'in':
+            menuItemBor.connect('activate', self.popMenuCallb, 'borIn', treeView)
+        elif box == 'out':
+            menuItemBor.connect('activate', self.popMenuCallb, 'borOut', treeView)
+        menu.append(menuItemRes)
+        menu.append(menuItemFav)
+        menu.append(menuItemAg)
+        menu.append(menuItemBor)
+        menu.show_all()
+        return menu
+
+    def popMenuCallb(self, menuitem, action, treeView):
+        listStore, lIter = treeView.get_selection().get_selected()
+        name, Oid = listStore.get(lIter, 2, 5)    
+        if action == "res":
+            self.redactar_ventana(None, name)
+        elif action == "fav":
+            pass
+        elif action == "ag":
+            pass
+        elif action == "borIn":
+            self.__Okeyko.inbox_bor(Oid)
+        elif action == "borOut":
+            pass
+        
 
     def set_inbox(self, mensajes):
         # muestra_avatar, muestra_texto, de, hora, mensaje, Oik, avatar, leido, fav
@@ -423,6 +463,7 @@ class mainWindow(gtk.Window):
         redactar.vbox.pack_start(labmen)
         labmen.show()
         mensaje = gtk.TextView()
+        mensaje.set_wrap_mode(gtk.WRAP_WORD)
         mensaje.set_left_margin(6)
         mensaje.set_right_margin(6)
         mensaje.set_wrap_mode(gtk.WRAP_WORD_CHAR)
@@ -473,7 +514,7 @@ class mainWindow(gtk.Window):
         self.__Notification.newNotification(tit)
         return
 
-    def agenda_ventana(self, widget, data=None):
+    def agenda_ventana(self, widget=None, data=None):
         '''Creador de la ventana de agenda'''
         agenda = gtk.Dialog("Agenda", self)
         vbox = gtk.VBox()
@@ -573,4 +614,15 @@ class mainWindow(gtk.Window):
         mainWinGeometry = "%sx%s+%s+%s" % (wWin, hWin, xPos, yPos)
         if self.__Config.glob['mainWindowGeometry'] != mainWinGeometry:
             self.__Config.glob['mainWindowGeometry'] = mainWinGeometry
+
+    def showHide(self, widget=None, *args):
+        '''Show or hide the main window'''
+#        self.tray.set_blinking(False)
+        if self.flags() & gtk.VISIBLE:
+            self.saveMainWindowGeometry()
+            self.hide()
+        else:
+            self.deiconify()
+            self.show()
+        return True
 

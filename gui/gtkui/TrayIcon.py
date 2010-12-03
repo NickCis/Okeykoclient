@@ -218,7 +218,7 @@ class TrayIcon:
         #    self.showHide()
         if self.tray.get_blinking(): 
             self.tray.set_blinking(False)
-            self.showHide()
+        self.showHide()
 
     def buildMenu(self):
         '''Build the menu widget'''
@@ -232,6 +232,36 @@ class TrayIcon:
         menuItemShowHide.connect('activate', self.showHide)
 
         self.menu.append(menuItemShowHide)
+        self.menu.append(menuItemQuit)
+
+        if os.name == "nt":
+            self.timerID = None
+            self.menu.connect("leave-notify-event", self.start_timer_nt)
+        self.menu.show_all()
+
+    def reBuildMenu(self):
+        '''Builds the menu widget after connecting'''
+        self.menu = gtk.Menu()
+        
+        menuItemQuit = gtk.ImageMenuItem( gtk.STOCK_QUIT )
+        menuItemQuit.connect('activate', self.on_quit)
+
+        menuItemAg = gtk.MenuItem("Agenda")
+        menuItemAg.connect('activate', self.on_agenda)
+        
+        menuItemRed = gtk.MenuItem("Redactar")
+        menuItemRed.connect('activate', self.on_redactar)
+
+        menuItemDes = gtk.ImageMenuItem( gtk.STOCK_DISCONNECT )
+        menuItemDes.connect('activate', self.on_disconnect) #TODO: disconect
+
+        menuItemShowHide = gtk.MenuItem("Ocultar/Mostrar Okeyko Client")
+        menuItemShowHide.connect('activate', self.showHide)
+
+        self.menu.append(menuItemShowHide)
+        self.menu.append(menuItemAg)
+        self.menu.append(menuItemRed)
+        self.menu.append(menuItemDes)        
         self.menu.append(menuItemQuit)
 
         if os.name == "nt":
@@ -261,6 +291,15 @@ class TrayIcon:
         #self.controller.quit( 0 )
         gtk.main_quit()
         exit()
+
+    def on_agenda( self, menuitem):
+        self.mainWindow.agenda_ventana()
+        
+    def on_redactar( self, menuitem):
+        self.mainWindow.redactar_ventana()
+        
+    def on_disconnect( self, menuitem):
+        pass
     
     def showHide(self, widget = None):
         '''Show or hide the main window'''

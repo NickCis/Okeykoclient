@@ -210,9 +210,15 @@ class okeyko:
                 {'style':' font-size:11px; color:#666;'}).text
             leido = 0 #TODO: Arreglar leido
             fav = 0 #TODO: Get Favorito
-            inboxNew.append([de, hora, mensaje, Oik, avatar, leido, fav])
-        if int(inboxNew[0][3]) <= int(minId):
+            if int(Oik) <= int(minId):
+                break
+            else:
+                inboxNew.append([de, hora, mensaje, Oik, avatar, leido, fav])
+        if len(inboxNew) < 1:
             return False
+        elif len(inboxNew[0]) > 4:
+            if int(inboxNew[0][3]) <= int(minId):
+                return False
         return inboxNew
 
     def outbox(self):

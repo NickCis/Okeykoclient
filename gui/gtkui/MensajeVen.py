@@ -84,6 +84,7 @@ class MensajeVen(gtk.Window):
         #TVmensaje = gtk.TextView()
         TVmensaje = htmltextview.HtmlTextView()
         TVmensaje.display_html(texto)
+        TVmensaje.set_wrap_mode(gtk.WRAP_WORD)
         #TVmensaje.set_editable(False)
         #TVmensaje.set_buffer(textbuffer)
         #TVmensaje.set_left_margin(6)
