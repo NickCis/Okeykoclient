@@ -389,35 +389,32 @@ class mainWindow(gtk.Window):
 
     def __menAdd(self, store, mensajes, pre=False):
         '''Agrega los mensajes al store especificado'''
-        imgcache = {"estado0" : gtk.gdk.pixbuf_new_from_file(\
-                        self.__Config.pathFile("theme-new.png")),
-                    "estado1" : gtk.gdk.pixbuf_new_from_file(\
-                        self.__Config.pathFile("theme-leido_pc.png")),
-                    "estado2" : gtk.gdk.pixbuf_new_from_file(\
-                        self.__Config.pathFile("theme-leido_cel.png"))}
-        for mensaje in mensajes:            
+
+        for mensaje in mensajes:
             texto = '%s' +\
                 '\n<span size="small" foreground="#A4A4A4">%s</span>'
             texto = texto % (mensaje[0], mensaje[2].replace("\n",""))
-            if mensaje[5] == "0": # Mensaje Nuevo
-                estado = imgcache["estado0"]
-                texto = '<span background="#F7BE81">%s</span>' % texto
-            elif mensaje[5] == "1": # Leido Pc
-                estado = imgcache["estado1"]
-            else: # Leido Cel
-                estado = imgcache["estado2"]
-            avatar =  gtk.gdk.PixbufLoader()
-            avatar.write(self.__Config.avatarLoad(mensaje[4])[1])
-            avatarG = avatar.get_pixbuf()
-            avatar.close()
+            if str(mensaje[5]) == "0": # Mensaje Nuevo
+                estado = self.__Config.pathFile("theme-new.png")
+                texto = '<span background="#F7BE81">bla%s</span>' % texto
+            elif str(mensaje[5]) == "1": # Leido Movil
+                estado = self.__Config.pathFile("theme-leido_cel.png")
+            else: # Leido PC
+                estado = self.__Config.pathFile("theme-leido_pc.png")
+            #avatar =  gtk.gdk.PixbufLoader()
+            #avatar.write(self.__Config.avatarLoad(mensaje[4])[1])
+            #avatarG = avatar.get_pixbuf()
+            #avatar.close()
+            avatarG = gtk.gdk.pixbuf_new_from_file(
+                self.__Config.avatarLoad(mensaje[4],False)[1])
             avatarG_w = avatarG.get_width()
             avatarG_h = avatarG.get_height()
             avatarM_h = 40 * avatarG_h / avatarG_w
             avatarM = avatarG.scale_simple(40,avatarM_h,gtk.gdk.INTERP_NEAREST)
-            gtk.gdk.threads_enter()
+            #gtk.gdk.threads_enter()
             avatarM = self.add_status(avatarM, estado, avatarM.get_width() - 15, avatarM.get_height() - 15)
-            gtk.gdk.threads_leave()
-            row = [avatarM, texto]
+            #gtk.gdk.threads_leave()
+            row = list([avatarM, texto])
             for c in mensaje:
                 row.append(c)
             if pre:
@@ -425,13 +422,15 @@ class mainWindow(gtk.Window):
             else:
                 store.append(row)
         return
-        
-    def add_status(self, pixbuf, adpixbuf, posx, posy):
+
+    def add_status(self, pixbuf, pathAdpixbuf, posx, posy):
+        '''Agrega la fotito de donde se leyo (cel,pc,no)'''
+        adpixbuf = gtk.gdk.pixbuf_new_from_file_at_size(pathAdpixbuf, 15, 15)
         pixmap,_ = pixbuf.render_pixmap_and_mask()
         gc = pixmap.new_gc()
         pixmap.draw_pixbuf(gc, adpixbuf, 0, 0, posx, posy)
         return pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(), 0, 0, 0, 0, -1, -1)
-        
+
     def estadoSet(self, widget, estado, *args, **kargs):
         self.__Okeyko.estadoSet(estado)
 
@@ -594,7 +593,6 @@ class mainWindow(gtk.Window):
             model.set_value(model.get_iter_from_string("%s:0" % (row)),0,pixbuf)
             model.set_value(model.get_iter_from_string("%s:1" % (row)),1,texto)
             model.set_value(model.get_iter_from_string("%s:7" % (row)),7,1)
-
 
     def Nulo(self, *args, **kwargs):
         return

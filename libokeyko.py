@@ -153,7 +153,12 @@ class okeyko:
             avatar = li.img['src'][li.img['src'].rfind('/')+1:]
             leido = li.findAll('div',{'style': ' font-size:11px; color:#666;' \
                     })[0].contents[0]
-            leido = 1 #TODO: Arreglar leido
+            if leido.find('MOVIL') != -1:
+                leido = 1
+            elif leido.find('PC') != -1:
+                leido = 2
+            else:
+                leido = 0
             fav = 0 #TODO: Get Favorito
             self.__inbox.append([de, hora, mensaje, Oik, avatar, leido, fav])
         outs = pag.findAll('div',{'class':'conten_mensaje'})
@@ -165,8 +170,13 @@ class okeyko:
             hora = ph[ph.find('|')+1:ph.rfind('|')]
             Oid = out.find('div',{'id':'herramientas'}).input['value']
             avatar = avt[avt.rfind('/')+1:] #TODO: Get avatar
-            #leido = out.find('div',{'id':'herramientas'}).replace("| Eliminar",'')
-            leido = 1 #TODO: Arreglar leido
+            leido = out.find('div',{'id':'herramientas'}).text
+            if leido.find('MOVIL') != -1:
+                leido = 1
+            elif leido.find('PC') != -1:
+                leido = 2
+            else:
+                leido = 0
             self.__outbox.append([para, hora, mensaje, Oid, avatar, leido])
         self.agenda_lista()
 
