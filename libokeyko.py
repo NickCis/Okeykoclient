@@ -92,6 +92,7 @@ class okeyko:
         self.__agenda_lista = None
         self.__inbox = False
         self.__outbox = False
+        self.__outboxPag = False
         self.__avatar = False
         self.__estado = False
         
@@ -137,13 +138,76 @@ class okeyko:
         url = "/nv02/boceto.php"
         pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
         avt = pag.find('img',{'title':'Usuario', 'class':'reflect rheight20'})['src']
-        self.__avatar = self.avatar(avt[avt.rfind('/')+1:],'m')
+        self.__avatarLink = avt[avt.rfind('/')+1:]
+        self.__avatar = self.avatar(self.__avatarLink,'m')
         try:
             self.__estado = pag.find('b',{'style':'color:#FFF;'}).text
         except:
             self.__estado = ""
-        lis = pag.findAll('li')
-        self.__inbox = []
+        self.__inbox = self.__getInbox(pag)
+        #lis = pag.findAll('li')
+        #self.__inbox = []
+        #for i in range(0, len(lis) - 4 ):
+        #    li = lis[i + 4]
+        #    de = li.findAll('a')[1].string
+        #    hora = li.find('td',{'align':'right'}).text
+        #    mensaje = li.findAll('br')[5].next
+        #    Oik = li.label['for']
+        #    avatar = li.img['src'][li.img['src'].rfind('/')+1:]
+        #    leido = li.findAll('div',{'style': ' font-size:11px; color:#666;' \
+        #            })[0].contents[0]
+        #    if leido.find('MOVIL') != -1:
+        #        leido = 1
+        #    elif leido.find('PC') != -1:
+        #        leido = 2
+        #    else:
+        #        leido = 0
+        #    fav = 0 #TODO: Get Favorito
+        #    self.__inbox.append([de, hora, mensaje, Oik, avatar, leido, fav])
+        self.__outboxPag = 1
+        self.__outbox = self.__getOutbox(pag)
+        #outs = pag.findAll('div',{'class':'conten_mensaje'})
+        #self.__outbox = []
+        #for out in outs:
+        #    mensaje = out.find('div', {'id':'cuerpo_mensaje'}).text
+        #    ph = out.find('div',{'id':'mensaje_head'}).text
+        #    para = ph[ph.find('">')+2:ph.find('|')]
+        #    hora = ph[ph.find('|')+1:ph.rfind('|')]
+        #    Oid = out.find('div',{'id':'herramientas'}).input['value']
+        #    avatar = avt[avt.rfind('/')+1:] #TODO: Get avatar
+        #    leido = out.find('div',{'id':'herramientas'}).text
+        #    if leido.find('MOVIL') != -1:
+        #        leido = 1
+        #    elif leido.find('PC') != -1:
+        #        leido = 2
+        #    else:
+        #        leido = 0
+        #    self.__outbox.append([para, hora, mensaje, Oid, avatar, leido])
+        self.agenda_lista()
+
+    def getMoreInbox(self):
+        lastOId = self.__inbox[len(self.__inbox) - 1][3]
+        params = urllib.urlencode({'lastmsg': str(lastOId)})
+        url = "/nv02/0ajax_more.php"
+        pag = BS(unescape(unicode(self.pagina(url,params), 'latin-1')))
+        Ins = self.__getInbox(pag)
+        for i in Ins:
+            self.__inbox.append(i)
+        return Ins
+
+    def getMoreOutbox(self):
+        if self.__conectado != True: return
+        self.__outboxPag = self.__outboxPag + 1
+        url = "/nv02/boceto_enviados.php?paginae=%s" % self.__outboxPag
+        pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
+        Outs = self.__getOutbox(pag)
+        for o in Outs:
+            self.__outbox.append(o)
+        return Outs
+            
+    def __getInbox(self, BShtml):
+        lis = BShtml.findAll('li')
+        menInbox = []
         for i in range(0, len(lis) - 4 ):
             li = lis[i + 4]
             de = li.findAll('a')[1].string
@@ -160,16 +224,19 @@ class okeyko:
             else:
                 leido = 0
             fav = 0 #TODO: Get Favorito
-            self.__inbox.append([de, hora, mensaje, Oik, avatar, leido, fav])
-        outs = pag.findAll('div',{'class':'conten_mensaje'})
-        self.__outbox = []
+            menInbox.append([de, hora, mensaje, Oik, avatar, leido, fav])
+        return menInbox
+
+    def __getOutbox(self, BShtml):
+        outs = BShtml.findAll('div',{'class':'conten_mensaje'})
+        menOutbox = []
         for out in outs:
             mensaje = out.find('div', {'id':'cuerpo_mensaje'}).text
             ph = out.find('div',{'id':'mensaje_head'}).text
             para = ph[ph.find('">')+2:ph.find('|')]
             hora = ph[ph.find('|')+1:ph.rfind('|')]
             Oid = out.find('div',{'id':'herramientas'}).input['value']
-            avatar = avt[avt.rfind('/')+1:] #TODO: Get avatar
+            avatar = self.__avatarLink #TODO: Get avatar
             leido = out.find('div',{'id':'herramientas'}).text
             if leido.find('MOVIL') != -1:
                 leido = 1
@@ -177,8 +244,8 @@ class okeyko:
                 leido = 2
             else:
                 leido = 0
-            self.__outbox.append([para, hora, mensaje, Oid, avatar, leido])
-        self.agenda_lista()
+            menOutbox.append([para, hora, mensaje, Oid, avatar, leido]) 
+        return menOutbox   
 
     def userinfo(self):
         if self.__conectado != True: return
@@ -220,7 +287,7 @@ class okeyko:
                 {'style':' font-size:11px; color:#666;'}).text
             leido = 0 #TODO: Arreglar leido
             fav = 0 #TODO: Get Favorito
-            if int(Oik) <= int(minId):
+            if int(Oik) <= int(minId): #TODO: arreglar esto. Es feo.
                 break
             else:
                 inboxNew.append([de, hora, mensaje, Oik, avatar, leido, fav])
@@ -237,8 +304,6 @@ class okeyko:
         if self.__conectado != True: return
         if self.__inbox == False: return
         return [list(a) for a in self.__outbox]
-        
-
 
     def badeja_nuevos(self, minid= None):
         pass
@@ -265,8 +330,11 @@ class okeyko:
         #return mensajes
 
     def set_leido(self, ok_id):
-        url = "/cleinte/api.php?tipo=set_leido&ok_id=%s" % (ok_id)
-        self.pagina(url)
+        ok_id = int(ok_id) + 1
+        print ok_id
+        params = urllib.urlencode({'lastmsg': str(ok_id)})
+        url = "/nv02/0ajax_more.php"
+        self.pagina(url,params)
         return
 
     def enviar_mensaje(self, para, men):
@@ -319,14 +387,25 @@ class okeyko:
             for name in self.__agenda_lista:
                 ret.append(name[0])
             return ret
-        return self.agenda_lista
+        return self.__agenda_lista
+
+    def agendaAdd(self, nom, desc):
+        url = "/nv02/agenda/index.php"
+        params =  urllib.urlencode({'nombre_agenda': nom,
+                                    'descripcion_agenda': desc,
+                                    'action': 'checkdata',
+                                    'Submit': 'Agendar'})
+        pag = self.pagina(url, params)
+        if pag.find('Ojo Ojo!!') == -1:
+            return False
+        return True
 
     def inbox_bor(self, menid):
         if (type(menid) == tuple) | (type(menid) == list):
             menid = "&elimina[]=".join(menid)
         elimina = "?Submit=Eliminar+Seleccion&elimina[]=%s" % menid
         url = "/nv02/eliminar_sms.php"
-        print self.pagina(url, elimina)
+        self.pagina(url, elimina)
         return
         
     def outbox_bor(self, menid):
@@ -334,7 +413,7 @@ class okeyko:
             menid = "&elimina[]=".join(menid)
         elimina = "?Submit=Eliminar+Seleccion&eliminae[]=%s" % menid
         url = "/nv02/eliminar_sms_enviados.php"
-        print self.pagina(url, elimina)
+        self.pagina(url, elimina)
         return
 
     def getInfo(self, html, template, tdict=False, openf=True):
@@ -375,7 +454,20 @@ class okeyko:
         resp = download(self.__dom, link, post, True, self.__cookie, True, clength)
         ret = resp.read()
         resp.close()
-        return ret        
+        return ret
+
+    def disconnect(self):
+        self.__conectado = False
+        self.__cookie = None
+        self.__usuario = None
+        self.__contra = None
+        self.__agenda_lista = None
+        self.__inbox = False
+        self.__outbox = False
+        self.__outboxPag = False
+        self.__avatar = False
+        self.__estado = False
+             
 
 if __name__ == "__main__":
     import getpass

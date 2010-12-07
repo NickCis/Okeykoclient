@@ -133,6 +133,16 @@ class mainWindow(gtk.Window):
 
     def conectar(self, widget, user, contra, checks):
         ''' Callback para conectar '''
+        def post_conectar(arg):
+            conectado, error = self.__Okeyko.conectado()
+            if conectado:
+                self.redraw_ventana()
+            else:
+                self.child.set_property("sensitive", True)
+                anim.destroy()
+                label.set_text(error)
+
+        self.child.set_property("sensitive", False)
         entry_text = user.get_text()
         contra_text = contra.get_text()
         if checks[0]():
@@ -150,17 +160,8 @@ class mainWindow(gtk.Window):
         anim.show()
         label.show()
         print "---- Conectando -----"
-        self.__queueToServer.put((self.__Okeyko.login, (entry_text, contra_text), {}, self.post_conectar, (anim, label), {}))
-
-    def post_conectar(self, arg, arg2):
-        conectado, error = self.__Okeyko.conectado()
-        if conectado:
-            self.redraw_ventana()
-        else:
-            anim = arg2[0]
-            anim.destroy()
-            label = arg2[1]
-            label.set_text(error)
+        self.__queueToServer.put((self.__Okeyko.login, (entry_text, contra_text),
+                                  {}, post_conectar, (), {}))
 
     def redraw_ventana(self):
         '''Cambia la ventana despues de conectarse '''
@@ -232,51 +233,84 @@ class mainWindow(gtk.Window):
         sw.set_policy(gtk.POLICY_NEVER , gtk.POLICY_AUTOMATIC)
         sw.set_shadow_type(gtk.SHADOW_IN)
         #vbox.pack_start(sw, True, True)
-        frame1.add(sw)
+
+        inboxVbox = gtk.VBox()        
+        inboxVbox.pack_start(sw, True, True)
+
+        inboxMoreBut = gtk.Button("Anteriores Mensajes")
+        inboxMoreBut.connect("clicked", self.getMoreInbox)
+        inboxVbox.pack_end(inboxMoreBut, False)
+
+        frame1.add(inboxVbox)
 
         sw2 = gtk.ScrolledWindow()
         #sw2.set_shadow_type(gtk.SHADOW_ETCHED_IN)
         #sw2.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         sw2.set_policy(gtk.POLICY_NEVER , gtk.POLICY_AUTOMATIC)
         sw2.set_shadow_type(gtk.SHADOW_IN)
-        #vbox.pack_start(sw, True, True)
-        frame2.add(sw2)
+        #vbox.pack_start(sw, True, True)       
+
+        outboxVbox = gtk.VBox()        
+        outboxVbox.pack_start(sw2, True, True)
+        
+        outboxMoreBut = gtk.Button("Anteriores Mensajes")
+        outboxMoreBut.connect("clicked", self.getMoreOutbox)
+        outboxVbox.pack_end(outboxMoreBut, False)        
+
+        frame2.add(outboxVbox)
         
         # === Recividos
         #Crear el ListStore 
         # muestra_avatar, muestra_texto, de, hora, mensaje, Oik, avatar, leido, fav
         #self.inbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, gtk.gdk.Pixbuf, int, int)
-        self.inbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, str, int, int)
+        self.inbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, str, int, int, bool)
         
         #crear TreeView usando el ListStore y setear sus caracteristicas
         mensajeslist = gtk.TreeView(self.inbox_store)
         mensajeslist.set_headers_visible(False)
         mensajeslist.connect("row-activated", self.mostrarmensaje)
         mensajeslist.connect("button_press_event", self.popUpMenMenu, 'in')
+        
+        #self.mListS2N = mensajeslist.scroll_to_cell #TODO: fix scrolling
+        
+        #self.inbox_store.connect('row-inserted', self.scroll2N, 
+        #                         mensajeslist.scroll_to_cell)
 
         #crear Column
-        columnPix = gtk.TreeViewColumn("Avatar")
+        #columnPix = gtk.TreeViewColumn("Avatar")
         #columnPix.set_max_width(24)
-        columnText = gtk.TreeViewColumn("Mensaje")
+        #columnText = gtk.TreeViewColumn("Mensaje")
+        columnPT = gtk.TreeViewColumn('PT')
 
         #agrega las Column al TreeView
-        mensajeslist.append_column(columnPix)
-        mensajeslist.append_column(columnText)
+        #mensajeslist.append_column(columnPix)
+        #mensajeslist.append_column(columnText)
+        mensajeslist.append_column(columnPT)
 
         #crear cellrender para mostrar data
         cellPixbuf = gtk.CellRendererPixbuf()
+        cellPixbuf.set_property('cell-background', 'orange')
         cellText = gtk.CellRendererText()
+        cellText.set_property('cell-background', 'orange')
 
         #anade las celdas a las columnas
-        columnPix.pack_start(cellPixbuf, False)
-        columnText.pack_start(cellText, False)
+        #columnPix.pack_start(cellPixbuf, False)
+        #columnText.pack_start(cellText, False)
+        columnPT.pack_start(cellPixbuf, False)
+        columnPT.pack_start(cellText, True)
         
         #anadir atributos a las columns
-        columnPix.set_attributes(cellPixbuf, pixbuf=0)
-        columnText.set_attributes(cellText, markup=1)
+        #columnPix.set_attributes(cellPixbuf, pixbuf=0)
+        #columnText.set_attributes(cellText, markup=1,
+        #                          cell_background_set=9)
+        columnPT.set_attributes(cellPixbuf, pixbuf=0,
+                                  cell_background_set=9)
+        columnPT.set_attributes(cellText, markup=1,
+                                  cell_background_set=9)
 
-        columnPix.set_sort_column_id(0)
-        columnText.set_sort_column_id(1)
+        #columnPix.set_sort_column_id(0)
+        #columnText.set_sort_column_id(1)
+        columnPT.set_sort_column_id(0)
 
         sw.add(mensajeslist)
 
@@ -284,7 +318,7 @@ class mainWindow(gtk.Window):
         #Crear el ListStore
         # muestra_avatar, muestra_mensaje, de, hora, mensaje, okid, avatar, leido
         #self.outbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, gtk.gdk.Pixbuf, int)
-        self.outbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, str, int)
+        self.outbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, str, int, bool)
         
         #crear TreeView usando el ListStore y setear sus caracteristicas
         enviadoslist = gtk.TreeView(self.outbox_store)
@@ -323,6 +357,9 @@ class mainWindow(gtk.Window):
         #self.__men_list(self.mensajes_store, self.__Okeyko.bandeja())
         #self.__env_list(self.enviados_store, self.__Okeyko.salida())
 
+    def scroll2N(self, treemodel, path, iter, scrollFunc):
+        scrollFunc(path)        
+
     def popUpMenMenu(self, widget, event, box):
         if event.type == gtk.gdk.BUTTON_PRESS: # Single click
             if event.button == 3: # Right Click - Show popup
@@ -360,17 +397,58 @@ class mainWindow(gtk.Window):
         elif action == "fav":
             pass
         elif action == "ag":
-            pass
+            self.agendaAdd(name)
         elif action == "borIn":
-            self.__Okeyko.inbox_bor(Oid)
+            self.borInbox(Oid)
         elif action == "borOut":
             pass
-        
+
+    def borInbox(self, Oid):
+        for row in self.inbox_store:
+            if str(row[5]) == str(Oid):
+                self.inbox_store.remove(row.iter)
+                break
+        self.__Okeyko.inbox_bor(Oid)
+
+    def getMoreInbox(self, button):    
+        def getMoreInboxPost(mensajes):
+            self.__menAdd(self.inbox_store, mensajes, False)
+            button.set_property("sensitive", True)
+            button.set_property("image", None)
+            button.set_label("Anteriores Mensajes")
+    
+        button.set_property("sensitive", False)
+        self.__queueToServer.put((self.__Okeyko.getMoreInbox, (), {},
+                                  getMoreInboxPost, (), {}))
+        PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
+        anim = gtk.Image()
+        anim.set_from_animation(PBanim)
+        button.set_image(anim)
+        anim.show()
+
+    def getMoreOutbox(self, button):
+        def getMoreOutboxPost(mensajes):
+            self.__menAdd(self.outbox_store, mensajes, False)
+            button.set_property("sensitive", True)
+            button.set_property('image', None)
+            button.set_label("Anteriores Mensajes")
+
+        button.set_property("sensitive", False)
+        self.__queueToServer.put((self.__Okeyko.getMoreOutbox, (), {},
+                                  getMoreOutboxPost, (), {}))
+        button.set_label("Cargando")
+        PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
+        anim = gtk.Image()
+        anim.set_from_animation(PBanim)
+        button.set_image(anim)
+        anim.show()
 
     def set_inbox(self, mensajes):
         # muestra_avatar, muestra_texto, de, hora, mensaje, Oik, avatar, leido, fav
         self.inbox_store.clear()
-        self.__menAdd(self.inbox_store, mensajes, False)
+        mensajes.reverse()
+        #self.__menAdd(self.inbox_store, mensajes, False)
+        self.__menAdd(self.inbox_store, mensajes, True)
         
     def new_inbox(self, mensajes):
         mensajes.reverse()
@@ -396,11 +474,14 @@ class mainWindow(gtk.Window):
             texto = texto % (mensaje[0], mensaje[2].replace("\n",""))
             if str(mensaje[5]) == "0": # Mensaje Nuevo
                 estado = self.__Config.pathFile("theme-new.png")
-                texto = '<span background="#F7BE81">bla%s</span>' % texto
+                #texto = '<span background="#F7BE81">bla%s</span>' % texto
+                nuevo = True
             elif str(mensaje[5]) == "1": # Leido Movil
                 estado = self.__Config.pathFile("theme-leido_cel.png")
+                nuevo = False
             else: # Leido PC
                 estado = self.__Config.pathFile("theme-leido_pc.png")
+                nuevo = False
             #avatar =  gtk.gdk.PixbufLoader()
             #avatar.write(self.__Config.avatarLoad(mensaje[4])[1])
             #avatarG = avatar.get_pixbuf()
@@ -417,6 +498,7 @@ class mainWindow(gtk.Window):
             row = list([avatarM, texto])
             for c in mensaje:
                 row.append(c)
+            row.append(nuevo)
             if pre:
                 store.prepend(row)
             else:
@@ -473,7 +555,7 @@ class mainWindow(gtk.Window):
         redactar.vbox.pack_start(numlabel)
         numlabel.show()
         redactar.show()
-        enviar.connect("clicked", self.mandarmensaje, para, mensaje)
+        enviar.connect("clicked", self.mandarmensaje, redactar, para, mensaje)
         mensaje.get_buffer().connect("changed", self.actnumlabel, numlabel)
     
     def actnumlabel(self, wid, numlabel):
@@ -481,8 +563,23 @@ class mainWindow(gtk.Window):
         length = wid.get_char_count()
         numlabel.set_text("%s" % length)
 
-    def mandarmensaje(self, widget, widpara, widmensaje):
+    def mandarmensaje(self, widget, alert, widpara, widmensaje):
         '''Callback para mandar mensaje '''
+        def post_mandarmensaje(arg):
+            bol, error = arg
+            if bol:        
+                tit = "Mensaje Enviado!"
+                window.destroy()
+            else:
+                alert.child.set_property('sensitive', True)
+                tit = "Error Mandando Mensaje"
+                label = gtk.Label(error)
+                container.pack_start(label)
+                label.show()
+            self.__Notification.newNotification(tit)
+            return
+
+        alert.child.set_property('sensitive', False)
         Hbox = gtk.HBox()
         PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
         anim = gtk.Image()
@@ -496,23 +593,54 @@ class mainWindow(gtk.Window):
         mensaje = widmensaje.get_buffer().get_text(\
                     widmensaje.get_buffer().get_start_iter(),\
                     widmensaje.get_buffer().get_end_iter())
-        self.__queueToServer.put((self.__Okeyko.enviar_mensaje, (para, mensaje), {}, self.post_mandarmensaje, (widget.get_parent().get_parent(), widget.get_parent().get_parent().get_parent()), {}))
+        container = widget.get_parent().get_parent()
+        window = widget.get_parent().get_parent().get_parent()
+        self.__queueToServer.put((self.__Okeyko.enviar_mensaje, (para, mensaje),
+                                  {}, post_mandarmensaje, (), {}))
         return
 
-    def post_mandarmensaje(self, arg, arg2):
-        bol, error = arg
-        container, window = arg2
-        if bol:        
-            tit = "Mensaje Enviado!"
-            window.destroy()
-        else:
-            tit = "Error Mandando Mensaje"
-            label = gtk.Label(error)
-            container.pack_start(label)
-            label.show()
-        self.__Notification.newNotification(tit)
-        return
+    def agendaAdd(self, nom=None):
+        '''Alert para agregar a la agenda'''
+        agenda = gtk.Dialog("Agenda", self)
+        Hbox1 = gtk.HBox()
+        label1 = gtk.Label("Usuario")
+        entry1 = gtk.Entry()
+        if nom != None:
+            entry1.set_text(nom)
+        Hbox1.pack_start(label1)
+        Hbox1.pack_start(entry1)
+        Hbox2 = gtk.HBox()
+        label2 = gtk.Label("Descripcion")
+        entry2 = gtk.Entry()
+        Hbox2.pack_start(label2)
+        Hbox2.pack_start(entry2)
+        button = gtk.Button('Agregar')
+        callb = lambda x: self.__agendaAdd(u=entry1.get_text(),
+                                           d=entry2.get_text(),
+                                           w=agenda)
+        #button.connect('clicked', self.__agendaAdd, u=entry1.get_text(),
+        #                                            d=entry2.get_text())
+        button.connect('clicked', callb)
+        agenda.vbox.pack_start(Hbox1)
+        agenda.vbox.pack_start(Hbox2)
+        agenda.vbox.pack_start(button)
+        agenda.show_all()
 
+    def __agendaAdd(self, *args, **kargs):
+        def post(*args):
+            print args
+            if r:
+                w.destroy()
+                n("Agregado correctamente")
+            else:
+                w.vbox.pack_start(gtk.Label('Error'))
+        u = kargs['u']
+        d = kargs['d']
+        w = kargs['w']
+        n = self.__Notification.newNotification
+        self.__queueToServer.put((self.__Okeyko.agendaAdd, (u, d), {},
+                                  post, (w, n), {}))        
+        
     def agenda_ventana(self, widget=None, data=None):
         '''Creador de la ventana de agenda'''
         agenda = gtk.Dialog("Agenda", self)
@@ -558,11 +686,13 @@ class mainWindow(gtk.Window):
         agenda.vbox.pack_start(agendaTreeView, True, True, 0)
 
         agenda.show_all()
-        self.__queueToServer.put((self.__Okeyko.agenda_lista, (), {}, \
-                            self.agenda_ventana_add, (agenda_store), {}))
+        #self.__queueToServer.put((self.__Okeyko.agenda_lista, (), {}, \
+        #                    self.agenda_ventana_add, (agenda_store), {}))        
+        self.agenda_ventana_add(self.__Okeyko.agenda_lista(), agenda_store)
         return
 
     def agenda_ventana_add(self, arg, store):
+        print arg, store
         contactos = arg
         for contacto in contactos:
             nombre = contacto[0]
@@ -582,17 +712,21 @@ class mainWindow(gtk.Window):
     def mostrarmensaje(self, widget, row, col):
         model = widget.get_model()
         MensajeVen.MensajeVen(model, row, self.__Control)
-        if model[row][7] == 0:
+        if model[row][9]:
             self.__queueToServer.put((self.__Okeyko.set_leido, (model[row][5],),\
                                 {}, self.Nulo, (), {}))
-            texto = model[row][1].replace(" background=\"#F7BE81\"","")
-            pixbuf = self.add_status(model[row][0], gtk.gdk.pixbuf_new_from_file(\
-                        self.__Config.pathFile("theme-leido_pc.png")),\
-                        model[row][0].get_width() - 15,\
+            #texto = model[row][1].replace(" background=\"#F7BE81\"","")
+            #pixbuf = self.add_status(model[row][0], gtk.gdk.pixbuf_new_from_file(\
+            #            self.__Config.pathFile("theme-leido_pc.png")),\
+            #            model[row][0].get_width() - 15,\
+            #            model[row][0].get_height() - 15)
+            pixbuf = self.add_status(model[row][0], self.__Config.pathFile(
+                        "theme-leido_pc.png"),
+                        model[row][0].get_width() - 15,
                         model[row][0].get_height() - 15)
-            model.set_value(model.get_iter_from_string("%s:0" % (row)),0,pixbuf)
-            model.set_value(model.get_iter_from_string("%s:1" % (row)),1,texto)
-            model.set_value(model.get_iter_from_string("%s:7" % (row)),7,1)
+            model.set_value(model.get_iter_from_string("%s:0" % (row)), 0, pixbuf)
+            #model.set_value(model.get_iter_from_string("%s:1" % (row)), 1,texto)
+            model.set_value(model.get_iter_from_string("%s:9" % (row)), 9, False)
 
     def Nulo(self, *args, **kwargs):
         return
@@ -624,3 +758,6 @@ class mainWindow(gtk.Window):
             self.show()
         return True
 
+    def disconnect(self):
+        self.LoginWin()
+        self.emit('redraw-disconnect')

@@ -43,14 +43,24 @@ class server(threading.Thread):
                 resultado = None
                 cb = False
             if cb:
-                if (cargs) and (ckwargs):
-                    self.colaOut.put((callback, (resultado, cargs,), ckwargs))
-                elif ckwargs:
-                    self.colaOut.put((callback, (resultado,), ckwargs))
-                elif cargs:
-                    self.colaOut.put((callback, (resultado, cargs), {}))
+                if cargs:
+                    resul = [resultado]
+                    for arg in cargs:
+                        resul.append(arg)
+                    resultado = tuple(resul)
                 else:
-                    self.colaOut.put((callback, (resultado,), {}))
+                    resultado = (resultado,)
+                if not ckwargs:
+                    ckwargs = {}
+                self.colaOut.put((callback, resultado, ckwargs))                
+                #if (cargs) and (ckwargs):
+                #    self.colaOut.put((callback, (resultado, cargs,), ckwargs))
+                #elif ckwargs:
+                #    self.colaOut.put((callback, (resultado,), ckwargs))
+                #elif cargs:
+                #    self.colaOut.put((callback, (resultado, cargs), {}))
+                #else:
+                #    self.colaOut.put((callback, (resultado,), {}))
             time.sleep(1)
 
 
@@ -66,6 +76,7 @@ class actmen(threading.Thread):
         notificaciones = Funcion para notificaciones OSD
         '''
         threading.Thread.__init__(self)
+        self.__Control = Control
         self.__Cola = Control['queueToGui']
         self.__Okeyko = Control['Okeyko']
         #self.__Condition = condition
@@ -73,6 +84,7 @@ class actmen(threading.Thread):
         self.__Sound = Control['Sound']
         self.__Config = Control['Config']
         self.__MinId = None
+        self.loop = True
         self.setDaemon(True)
         #self.start()
         
@@ -85,7 +97,22 @@ class actmen(threading.Thread):
         self.__Notifications = Notificaciones
         
     def thStart(self, *args, **kargs):
-        self.start()
+        while self.isAlive():
+            threading.Thread(target=self.join)
+            time.sleep(1)
+        try:
+            self.start()
+        except:
+            MainWindow = self.__MainWindow
+            Notifications = self.__Notifications
+            self = actmen(self.__Control)
+            self.__MainWindow = MainWindow
+            self.__Notifications = Notifications
+            self.start()
+
+    def thStop(self, *args, **kargs):
+        self.loop = False
+        threading.Thread(target=self.join)
 
     def run(self):
         #if self.__Condition != None:
@@ -125,7 +152,8 @@ class actmen(threading.Thread):
         #self.__MainWindow.set_outbox(outbox)
         #gtk.gdk.threads_leave()
 
-        while True:
+        #while True:
+        while self.loop:
             time.sleep(15) #TODO: evaluar el tiempo. Convertirlo a config
             #mensajes = self.__Okeyko.badeja_nuevos(self.__MinId)
             mensajes = self.__Okeyko.inboxNew(self.__MinId)

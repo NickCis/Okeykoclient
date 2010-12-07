@@ -299,6 +299,7 @@ class TrayIcon:
         self.mainWindow.redactar_ventana()
         
     def on_disconnect( self, menuitem):
+        self.mainWindow.disconnect()
         pass
     
     def showHide(self, widget = None):

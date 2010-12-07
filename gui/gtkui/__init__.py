@@ -8,13 +8,17 @@ import Notification
 import TrayIcon
 
 def gtk_main(Control):
+
     def redrawDone(*args):
         Control['ActMen'].thStart()
         Tray.reBuildMenu()
-    gtk.gdk.threads_init()
     
     def redrawDisconnect(*args):
-        pass
+        Control['Okeyko'].disconnect()
+        Control['ActMen'].thStop()
+        Tray.buildMenu()
+
+    gtk.gdk.threads_init()
 
     Notificaciones = Notification.MainClass(Control)
     Control.update({'Notification' : Notificaciones})
