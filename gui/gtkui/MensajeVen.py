@@ -3,11 +3,53 @@ import gtk
 import htmltextview
 import paths
 
+UI = '''<ui>
+    <menubar name="MenuBar">
+      <menu action="Archivo">
+        <menuitem action="Salir"/>
+      </menu>
+      <menu action="Mensajes">
+        <menuitem action="Nada"/>
+      </menu>
+      <menu action="Contactos">
+        <menuitem action="Nada"/>
+        <menuitem action="Nada"/>
+        <menuitem action="Nada"/>
+      </menu>
+    </menubar>
+    <toolbar name="Toolbar">
+      <toolitem action="Resp"/>
+      <separator/>
+      <toolitem action="Age"/>
+      <separator/>
+      <toolitem action="Favs"/>
+      <separator/>
+      <toolitem action="Bor"/>
+    </toolbar>
+    </ui>'''
+
+
 class MensajeVen(gtk.Window):
     ''' Ventana que muestra mensaje '''
 
     #def __init__(self, okid, para, hora, mensaje, avatar):
     def __init__(self, model, row, Control):
+        def agendar(*args, **kargs):
+            Control['MainWindow'].agendaAdd(para)
+
+        def closeWin(*args,**kargs):
+            self.destroy()
+
+        def responder(*args, **kargs):
+            Control['MainWindow'].redactar_ventana(None, para)
+
+        def borrar(*args, **kargs):
+            Control['MainWindow'].borInbox(okid)
+            self.destroy()
+
+        
+        def actcallb(*args, **kargs):
+            print args, kargs
         gtk.Window.__init__(self)
         self.__Config = Control['Config']
         okid = model[row][5]
@@ -24,50 +66,94 @@ class MensajeVen(gtk.Window):
         MainVbox = gtk.VBox(False,0)
         self.add(MainVbox)
 
-        BHbox = gtk.HBox(False, 0)
+        #BHbox = gtk.HBox(False, 0)
         #BHbox.set_size_request(24,24)
         UpperHbox = gtk.HBox()
+        UIVBox = gtk.VBox()
         LowerHbox = gtk.HBox()
-        MainVbox.pack_start(gtk.HSeparator(), False, 0)
-        MainVbox.pack_start(BHbox, False, 0)
-        MainVbox.pack_start(gtk.HSeparator(), False, 0)
+        #MainVbox.pack_start(gtk.HSeparator(), False, 0)
+        MainVbox.pack_start(UIVBox, False, 0)
+        #MainVbox.pack_start(BHbox, False, 0)
+        #MainVbox.pack_start(gtk.HSeparator(), False, 0)
         MainVbox.pack_start(UpperHbox)
         MainVbox.pack_start(LowerHbox)
+        
+        #Ui Manager --------------------------------------------
+        uimanager = gtk.UIManager() #Create a Uimanager instance   
+             
+        accelgroup = uimanager.get_accel_group() # add accelartor group
+        self.add_accel_group(accelgroup)         # to the toplevel win
+        
+        actiongroup = gtk.ActionGroup('UIManagerMenuTool') # Create Action Group
+        
+        #create actions        
+        # (Name, StockItem, Label, accelerator, ToolTip, CallBack)
+        actiongroup.add_actions([('Salir', gtk.STOCK_QUIT, '_Cerrar Ventana', "<Ctrl><Alt>q",
+                                    'Cerrar Ventana', closeWin),
+                                 ('Nada', gtk.STOCK_QUIT, '_Nada', None,
+                                    'No hace nada', actcallb),
+                                 ('Archivo', None, '_Archivo'),
+                                 ('Contactos', None, '_Contactos'),
+                                 ('Mensajes', None, '_Mensajes'),
+                                 ('Resp', gtk.STOCK_REDO, 'Responder',
+                                    '<Ctrl>r', None, responder ),
+                                 ('Age', None, 'Agendar', '<ctrl>a',
+                                    None, agendar),
+                                 ('Favs', gtk.STOCK_ABOUT, 'Favoritos',
+                                    '<Ctrl>f', 'Agregar a favoritos', actcallb ),
+                                 ('Bor', gtk.STOCK_DELETE, 'Borrar', None,
+                                    "Borrar Mensaje", borrar)])
 
-        ImResp = gtk.Image()
-        pixbuf = gtk.gdk.pixbuf_new_from_file(paths.DEFAULT_THEME_PATH + "resp.png")
-        pixbuf = pixbuf.scale_simple(24,24,gtk.gdk.INTERP_NEAREST)
-        ImResp.set_from_pixbuf(pixbuf)
-        ButResp = gtk.Button()
-        ButResp.set_image(ImResp)
-        ButResp.set_relief(gtk.RELIEF_NONE)
-        ImAg = gtk.Image()
-        pixbuf = gtk.gdk.pixbuf_new_from_file(paths.DEFAULT_THEME_PATH + "ag.png")
-        pixbuf = pixbuf.scale_simple(24,24,gtk.gdk.INTERP_NEAREST)
-        ImAg.set_from_pixbuf(pixbuf)
-        ButAg = gtk.Button()
-        ButAg.set_image(ImAg)
-        ButAg.set_relief(gtk.RELIEF_NONE)
-        #ImFav = gtk.Image()
-        #pixbuf = gtk.gdk.pixbuf_new_from_file(paths.DEFAULT_THEME_PATH + "fav.png")
-        #pixbuf = pixbuf.scale_simple(16,16,gtk.gdk.INTERP_NEAREST)
-        #ImFav.set_from_pixbuf(pixbuf)
-        ButFav = gtk.Button("Favoritos")
-        #ButFav.set_image(ImFav)
-        ButFav.set_relief(gtk.RELIEF_NONE)
-        ImBor = gtk.Image()
-        pixbuf = gtk.gdk.pixbuf_new_from_file(paths.DEFAULT_THEME_PATH + "bor.png")
-        pixbuf = pixbuf.scale_simple(24,24,gtk.gdk.INTERP_NEAREST)
-        ImBor.set_from_pixbuf(pixbuf)
-        ButBor = gtk.Button()
-        ButBor.set_image(ImBor)
-        ButBor.set_relief(gtk.RELIEF_NONE)
 
-        BHbox.pack_start(ButResp, False, False, 0)
-        BHbox.pack_start(ButAg, False, False, 0)
-        BHbox.pack_start(ButFav, False, False, 0)
-        BHbox.pack_start(ButBor, False, False, 0)
+        uimanager.insert_action_group(actiongroup, 0) #Add actiongroup to the uimanager
+        
+        uimanager.add_ui_from_string(UI) #Add UI description
+         
+        menubar = uimanager.get_widget('/MenuBar') #Create MenuBar
+        UIVBox.pack_start(menubar, False)
+        
+        toolbar = uimanager.get_widget('/Toolbar') # Create a Toolbar
+        toolbar.set_property('toolbar-style', gtk.TOOLBAR_BOTH)
+        toolbar.set_property('icon-size', gtk.ICON_SIZE_SMALL_TOOLBAR)
+        UIVBox.pack_start(toolbar, False)        
 
+
+        #Reemplazar por gtk.UIManager --------------------------
+        #ImResp = gtk.Image()
+        #pixbuf = gtk.gdk.pixbuf_new_from_file(paths.DEFAULT_THEME_PATH + "resp.png")
+        #pixbuf = pixbuf.scale_simple(24,24,gtk.gdk.INTERP_NEAREST)
+        #ImResp.set_from_pixbuf(pixbuf)
+        #ButResp = gtk.Button()
+        #ButResp.set_image(ImResp)
+        #ButResp.set_relief(gtk.RELIEF_NONE)
+        #ImAg = gtk.Image()
+        #pixbuf = gtk.gdk.pixbuf_new_from_file(paths.DEFAULT_THEME_PATH + "ag.png")
+        #pixbuf = pixbuf.scale_simple(24,24,gtk.gdk.INTERP_NEAREST)
+        #ImAg.set_from_pixbuf(pixbuf)
+        #ButAg = gtk.Button()
+        #ButAg.set_image(ImAg)
+        #ButAg.set_relief(gtk.RELIEF_NONE)
+        ##ImFav = gtk.Image()
+        ##pixbuf = gtk.gdk.pixbuf_new_from_file(paths.DEFAULT_THEME_PATH + "fav.png")
+        ##pixbuf = pixbuf.scale_simple(16,16,gtk.gdk.INTERP_NEAREST)
+        ##ImFav.set_from_pixbuf(pixbuf)
+        #ButFav = gtk.Button("Favoritos")
+        ##ButFav.set_image(ImFav)
+        #ButFav.set_relief(gtk.RELIEF_NONE)
+        #ImBor = gtk.Image()
+        #pixbuf = gtk.gdk.pixbuf_new_from_file(paths.DEFAULT_THEME_PATH + "bor.png")
+        #pixbuf = pixbuf.scale_simple(24,24,gtk.gdk.INTERP_NEAREST)
+        #ImBor.set_from_pixbuf(pixbuf)
+        #ButBor = gtk.Button()
+        #ButBor.set_image(ImBor)
+        #ButBor.set_relief(gtk.RELIEF_NONE)
+
+        #BHbox.pack_start(ButResp, False, False, 0)
+        #BHbox.pack_start(ButAg, False, False, 0)
+        #BHbox.pack_start(ButFav, False, False, 0)
+        #BHbox.pack_start(ButBor, False, False, 0)
+        
+        # ------------------------------------------
         sw = gtk.ScrolledWindow()
         sw.set_size_request(200,200)
         sw.set_policy(gtk.POLICY_AUTOMATIC , gtk.POLICY_AUTOMATIC)

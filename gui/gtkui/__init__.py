@@ -21,8 +21,9 @@ def gtk_main(Control):
     gtk.gdk.threads_init()
 
     Notificaciones = Notification.MainClass(Control)
-    Control.update({'Notification' : Notificaciones})
-    MainWindow = okegtk.mainWindow(Control)    
+    Control.update({'Notification': Notificaciones})
+    MainWindow = okegtk.mainWindow(Control)
+    Control.update({'MainWindow': MainWindow})
     Tray = TrayIcon.TrayIcon(MainWindow)
     Control['ActMen'].setgui(MainWindow, Notificaciones)
     #MainWindow.connect('redraw-done', Control['ActMen'].thStart)

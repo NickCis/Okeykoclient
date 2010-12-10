@@ -4,6 +4,35 @@ import gobject
 import MensajeVen
 import TextField
 
+UI = '''<ui>
+    <menubar name="MenuBar">
+      <menu action="Cuenta">
+        <menuitem action="Desconectar"/>
+        <menuitem action="Salir"/>
+      </menu>
+      <menu action="Mensajes">
+        <menuitem action="Nada"/>
+      </menu>
+      <menu action="Contactos">
+        <menuitem action="AgeAdd"/>
+        <menuitem action="Agenda"/>
+      </menu>
+      <menu action="Ayuda">
+        <menuitem action="OkePag"/>
+        <menuitem action="Pag"/>
+        <separator/>
+        <menuitem action="About"/>
+      </menu>
+    </menubar>
+    <toolbar name="Toolbar">
+      <toolitem action="Redact"/>
+      <toolitem action="Agenda"/>
+      <separator/>
+      <toolitem action="Desconectar"/>
+      <toolitem action="Salir"/>
+    </toolbar>
+    </ui>'''
+
 class mainWindow(gtk.Window):
     ''' Clase que implementa todo lo relacionado a la interfaz grafica'''    
 
@@ -165,13 +194,66 @@ class mainWindow(gtk.Window):
 
     def redraw_ventana(self):
         '''Cambia la ventana despues de conectarse '''
+        def launchPag(*args): #TODO
+            print args[0].get_name()
+            
+        def aboutClient(*args): #TODO
+            print "About Client"
+
         #Aca ya esta conectado, damos la senal que se conecto y cambia la ventana
     #    self.conectwindow = self.mainWindow.child
         self.remove(self.child)     
 
         vbox = gtk.VBox(False, 0)
         self.add(vbox)
+
+        uimanager = gtk.UIManager() #Create a Uimanager instance   
+             
+        accelgroup = uimanager.get_accel_group() # add accelartor group
+        self.add_accel_group(accelgroup)         # to the toplevel win
         
+        actiongroup = gtk.ActionGroup('UIManagerMenuTool') # Create Action Group
+        
+        #create actions        
+        # (Name, StockItem, Label, accelerator, ToolTip, CallBack)
+        ageAddcb = lambda x: self.agendaAdd()
+        actiongroup.add_actions([('Cuenta', None, '_Cuenta'),
+                                 ('Salir', gtk.STOCK_QUIT, '_Salir', "<Ctrl><Alt>q",
+                                    'Salir', self.close_application),
+                                 ('Desconectar', gtk.STOCK_DISCONNECT,
+                                    '_Desconectar', None, 'Desconectar Okeyko',
+                                        self.disconnect),
+                                 ('Mensajes', None, '_Mensajes'),
+                                 ('Nada', None, '_Proximamente'),
+                                 ('Contactos', None, '_Contactos'),
+                                 ('AgeAdd', gtk.STOCK_ADD, '_Agregar', None, 
+                                    'Agregar a Agenda', ageAddcb),
+                                 ('Agenda', None, '_Agenda', None, 
+                                    'Mostrar Agenda', self.agenda_ventana),
+                                 ('Ayuda', None, '_Ayuda'),
+                                 ('OkePag', gtk.STOCK_HOME, 'Pagina de _Inicio',
+                                    None, None, launchPag),
+                                 ('Pag', gtk.STOCK_INFO, 'Pagina del _Cliente',
+                                    None, None, launchPag),
+                                 ('About', gtk.STOCK_ABOUT, 'Acerca _de', None,
+                                    "Borrar Mensaje", aboutClient),
+                                 ('Redact', None, '_Redactar', None,
+                                    'Escribir un Oky', self.redactar_ventana)])
+
+        uimanager.insert_action_group(actiongroup, 0) #Add actiongroup to the uimanager        
+        uimanager.add_ui_from_string(UI) #Add UI description         
+        menubar = uimanager.get_widget('/MenuBar') #Create MenuBar
+        vbox.pack_start(menubar, False)
+        
+        toolbar = uimanager.get_widget('/Toolbar') # Create a Toolbar+
+
+        for a in range(0, toolbar.get_n_items()):
+            toolbar.get_nth_item(a).set_is_important(True)
+        #toolbar.set_property('toolbar-style', gtk.TOOLBAR_BOTH)
+        toolbar.set_style(gtk.TOOLBAR_BOTH_HORIZ)
+        toolbar.set_property('icon-size', gtk.ICON_SIZE_SMALL_TOOLBAR)
+        vbox.pack_start(toolbar, False)
+                
         userHbox = gtk.HBox(False, 0)
         vbox.pack_start(userHbox, False, False)
         userNick, userAvatar, userEstado = self.__Okeyko.userinfo()
@@ -195,21 +277,18 @@ class mainWindow(gtk.Window):
         userEstE.connect("text-changed", self.estadoSet )
         userInVbox.pack_start(userEstE, True, True)
 
-        hboxmenu = gtk.HBox(False, 0)
-        #vbox.add(hboxmenu)
-        vbox.pack_start(hboxmenu, False, False)
-
-        butredac = gtk.Button("Redactar")
-        hboxmenu.pack_start(butredac, True, True)
-        butredac.connect("clicked", self.redactar_ventana)
-
-        butagen = gtk.Button("Agenda")
-        hboxmenu.pack_start(butagen, True, True)
-        butagen.connect("clicked", self.agenda_ventana)
-
-        butsalir = gtk.Button("Salir")
-        hboxmenu.pack_start(butsalir, True, True)
-        butsalir.connect("clicked", self.close_application)
+        #hboxmenu = gtk.HBox(False, 0)
+        ##vbox.add(hboxmenu)
+        #vbox.pack_start(hboxmenu, False, False)
+        #butredac = gtk.Button("Redactar")
+        #hboxmenu.pack_start(butredac, True, True)
+        #butredac.connect("clicked", self.redactar_ventana)
+        #butagen = gtk.Button("Agenda")
+        #hboxmenu.pack_start(butagen, True, True)
+        #butagen.connect("clicked", self.agenda_ventana)
+        #butsalir = gtk.Button("Salir")
+        #hboxmenu.pack_start(butsalir, True, True)
+        #butsalir.connect("clicked", self.close_application)
 
         # Crea sistema de tabs
         tabsys = gtk.Notebook()
@@ -599,7 +678,7 @@ class mainWindow(gtk.Window):
                                   {}, post_mandarmensaje, (), {}))
         return
 
-    def agendaAdd(self, nom=None):
+    def agendaAdd(self, nom=None, desc=None):
         '''Alert para agregar a la agenda'''
         agenda = gtk.Dialog("Agenda", self)
         Hbox1 = gtk.HBox()
@@ -612,6 +691,8 @@ class mainWindow(gtk.Window):
         Hbox2 = gtk.HBox()
         label2 = gtk.Label("Descripcion")
         entry2 = gtk.Entry()
+        if desc != None:
+            entry2.set_text(desc)
         Hbox2.pack_start(label2)
         Hbox2.pack_start(entry2)
         button = gtk.Button('Agregar')
@@ -758,6 +839,6 @@ class mainWindow(gtk.Window):
             self.show()
         return True
 
-    def disconnect(self):
+    def disconnect(self, *args, **kargs):
         self.LoginWin()
         self.emit('redraw-disconnect')
