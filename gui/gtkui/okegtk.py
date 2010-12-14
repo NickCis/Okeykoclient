@@ -11,7 +11,8 @@ UI = '''<ui>
         <menuitem action="Salir"/>
       </menu>
       <menu action="Mensajes">
-        <menuitem action="Nada"/>
+        <menuitem action="Redact"/>
+        <menuitem action="Sms"/>
       </menu>
       <menu action="Contactos">
         <menuitem action="AgeAdd"/>
@@ -26,6 +27,9 @@ UI = '''<ui>
     </menubar>
     <toolbar name="Toolbar">
       <toolitem action="Redact"/>
+      <toolitem action="Sms"/>
+      <separator/>
+      <toolitem action="AgeAdd"/>
       <toolitem action="Agenda"/>
       <separator/>
       <toolitem action="Desconectar"/>
@@ -47,6 +51,8 @@ class mainWindow(gtk.Window):
     def __init__(self, Control):
     #def __init__(self, okeyko, colaOut, notificaciones=None):
         ''' Crea ventana '''
+        gtk.Window.__init__(self)
+
         self.__Control = Control
         self.__Okeyko = Control['Okeyko']
         self.__queueToServer = Control['queueToServer']
@@ -54,10 +60,12 @@ class mainWindow(gtk.Window):
         #self.__Notificaciones = notificaciones
         self.__Notification = Control['Notification']
         self.__Config = Control['Config']
+        iconPath = self.__Config.pathFile('theme-logo.png')
+        icon = gtk.gdk.pixbuf_new_from_file_at_size(iconPath, 64, 64)
+        self.set_icon_list(icon)
 
         # create a new window
-        #self.mainWindow = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        gtk.Window.__init__(self)
+        #self.mainWindow = gtk.Window(gtk.WINDOW_TOPLEVEL)        
         #self.set_position(gtk.WIN_POS_NONE)
         #self.mainWindow.set_size_request(200, 100)
         #self.set_default_size(300, 700)
@@ -228,7 +236,7 @@ class mainWindow(gtk.Window):
                                  ('Contactos', None, '_Contactos'),
                                  ('AgeAdd', gtk.STOCK_ADD, '_Agregar', None, 
                                     'Agregar a Agenda', ageAddcb),
-                                 ('Agenda', None, '_Agenda', None, 
+                                 ('Agenda', gtk.STOCK_DND, '_Agenda', None, 
                                     'Mostrar Agenda', self.agenda_ventana),
                                  ('Ayuda', None, '_Ayuda'),
                                  ('OkePag', gtk.STOCK_HOME, 'Pagina de _Inicio',
@@ -237,8 +245,10 @@ class mainWindow(gtk.Window):
                                     None, None, launchPag),
                                  ('About', gtk.STOCK_ABOUT, 'Acerca _de', None,
                                     "Borrar Mensaje", aboutClient),
-                                 ('Redact', None, '_Redactar', None,
-                                    'Escribir un Oky', self.redactar_ventana)])
+                                 ('Redact', gtk.STOCK_EDIT, '_Redactar', None,
+                                    'Escribir un Oky', self.redactar_ventana),
+                                 ('Sms', 'okc-foky', '_OkySms', None,
+                                    'Escribir un OkySms', self.Sms_ventana)])
 
         uimanager.insert_action_group(actiongroup, 0) #Add actiongroup to the uimanager        
         uimanager.add_ui_from_string(UI) #Add UI description         
@@ -247,8 +257,8 @@ class mainWindow(gtk.Window):
         
         toolbar = uimanager.get_widget('/Toolbar') # Create a Toolbar+
 
-        for a in range(0, toolbar.get_n_items()):
-            toolbar.get_nth_item(a).set_is_important(True)
+        #for a in range(0, toolbar.get_n_items()):
+        #    toolbar.get_nth_item(a).set_is_important(True)
         #toolbar.set_property('toolbar-style', gtk.TOOLBAR_BOTH)
         toolbar.set_style(gtk.TOOLBAR_BOTH_HORIZ)
         toolbar.set_property('icon-size', gtk.ICON_SIZE_SMALL_TOOLBAR)
@@ -274,7 +284,7 @@ class mainWindow(gtk.Window):
         userEstE.set_size_request(200,-1)
         if userEstado != "":
             userEstE.text = userEstado
-        userEstE.connect("text-changed", self.estadoSet )
+        userEstE.connect("text-changed", self.estadoSet, userEstE._get_text )
         userInVbox.pack_start(userEstE, True, True)
 
         #hboxmenu = gtk.HBox(False, 0)
@@ -401,7 +411,9 @@ class mainWindow(gtk.Window):
         
         #crear TreeView usando el ListStore y setear sus caracteristicas
         enviadoslist = gtk.TreeView(self.outbox_store)
-        enviadoslist.set_headers_visible(False)        
+        enviadoslist.set_headers_visible(False)
+        enviadoslist.connect("row-activated", self.mostrarenviado)
+        enviadoslist.connect("button_press_event", self.popUpMenMenu, 'out')
 
         #crear Column
         EcolumnPix = gtk.TreeViewColumn("Avatar")
@@ -447,32 +459,43 @@ class mainWindow(gtk.Window):
 
     def popMenuBuilder(self, treeView, box):
         menu = gtk.Menu()
-        menuItemRes = gtk.MenuItem("Responder")
-        menuItemRes.connect('activate', self.popMenuCallb, 'res', treeView)
+        if box == 'in':
+            labRes = 'Responder'
+            res = 'res'
+            favs = True
+            bor = 'borIn'
+        else:
+            labRes = 'Reenviar'
+            res = 'reenv'
+            favs = False
+            bor = 'borOut'
+        menuItemRes = gtk.MenuItem(labRes)
+        menuItemRes.connect('activate', self.popMenuCallb, res, treeView)
+        menu.append(menuItemRes)
 
-        menuItemFav = gtk.MenuItem("Favoritos")
-        menuItemFav.connect('activate', self.popMenuCallb, 'fav', treeView)
+        if favs:
+            menuItemFav = gtk.MenuItem("Favoritos")
+            menuItemFav.connect('activate', self.popMenuCallb, 'fav', treeView)
+            menu.append(menuItemFav)
 
         menuItemAg = gtk.MenuItem("Agegar a Agenda")
         menuItemAg.connect('activate', self.popMenuCallb, 'ag', treeView)
+        menu.append(menuItemAg)
 
         menuItemBor = gtk.ImageMenuItem( gtk.STOCK_DELETE )
-        if box == 'in':
-            menuItemBor.connect('activate', self.popMenuCallb, 'borIn', treeView)
-        elif box == 'out':
-            menuItemBor.connect('activate', self.popMenuCallb, 'borOut', treeView)
-        menu.append(menuItemRes)
-        menu.append(menuItemFav)
-        menu.append(menuItemAg)
+        menuItemBor.connect('activate', self.popMenuCallb, bor, treeView)
         menu.append(menuItemBor)
+
         menu.show_all()
         return menu
 
     def popMenuCallb(self, menuitem, action, treeView):
         listStore, lIter = treeView.get_selection().get_selected()
-        name, Oid = listStore.get(lIter, 2, 5)    
+        name, men, Oid = listStore.get(lIter, 2, 4, 5)    
         if action == "res":
             self.redactar_ventana(None, name)
+        elif action == "reenv":
+            self.redactar_ventana(None, name, men)
         elif action == "fav":
             pass
         elif action == "ag":
@@ -480,7 +503,7 @@ class mainWindow(gtk.Window):
         elif action == "borIn":
             self.borInbox(Oid)
         elif action == "borOut":
-            pass
+            self.borOutbox(Oid)
 
     def borInbox(self, Oid):
         for row in self.inbox_store:
@@ -488,6 +511,13 @@ class mainWindow(gtk.Window):
                 self.inbox_store.remove(row.iter)
                 break
         self.__Okeyko.inbox_bor(Oid)
+
+    def borOutbox(self, Oid):
+        for row in self.outbox_store:
+            if str(row[5]) == str(Oid):
+                self.outbox_store.remove(row.iter)
+                break
+        self.__Okeyko.outbox_bor(Oid)
 
     def getMoreInbox(self, button):    
         def getMoreInboxPost(mensajes):
@@ -592,10 +622,10 @@ class mainWindow(gtk.Window):
         pixmap.draw_pixbuf(gc, adpixbuf, 0, 0, posx, posy)
         return pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(), 0, 0, 0, 0, -1, -1)
 
-    def estadoSet(self, widget, estado, *args, **kargs):
-        self.__Okeyko.estadoSet(estado)
+    def estadoSet(self, widget, estado, getText, *args, **kargs):
+        self.__Okeyko.estadoSet(getText)
 
-    def redactar_ventana(self, widget=None, destinatario=None, data=None):
+    def redactar_ventana(self, widget=None, destinatario=None, men=None, data=None):
         ''' Callback que crea la ventana para redactar mensajes'''
         redactar = gtk.Dialog("Redactar", self)
         vbox = gtk.VBox()
@@ -624,10 +654,13 @@ class mainWindow(gtk.Window):
         labmen.show()
         mensaje = gtk.TextView()
         mensaje.set_wrap_mode(gtk.WRAP_WORD)
+        mensaje.set_accepts_tab(False)
         mensaje.set_left_margin(6)
         mensaje.set_right_margin(6)
         mensaje.set_wrap_mode(gtk.WRAP_WORD_CHAR)
         mensaje.set_size_request(275,100)
+        if men != None:
+            mensaje.get_buffer().set_text(men)
         redactar.vbox.pack_start(mensaje)
         mensaje.show()
         numlabel = gtk.Label()
@@ -635,6 +668,91 @@ class mainWindow(gtk.Window):
         numlabel.show()
         redactar.show()
         enviar.connect("clicked", self.mandarmensaje, redactar, para, mensaje)
+        mensaje.get_buffer().connect("changed", self.actnumlabel, numlabel)
+
+    def Sms_ventana(self, widget=None, destinatario=None, men=None, data=None):
+        ''' Callback que crea la ventana para redactar mensajes'''
+
+        def mandarSms(*args, **kargs):
+            '''Callback para mandar mensaje '''
+            def post_mandarmensaje(arg):
+                bol, error = arg
+                if bol:        
+                    tit = "OkySms Enviado!"
+                    redactar.destroy()
+                else:
+                    redactar.child.set_property('sensitive', True)
+                    tit = "Error Mandando OkySms"
+                    redactar.vbox.pack_start(gtk.Label(error))
+                    uCaptcha =  gtk.gdk.PixbufLoader()
+                    uCaptcha.write(self.__Okeyko.captcha())
+                    Captcha.set_from_pixbuf(uCaptcha.get_pixbuf())
+                    uCaptcha.close()
+                    redactar.show_all()
+                    anim.destroy()
+                self.__Notification.newNotification(tit)
+                return
+    
+            redactar.child.set_property('sensitive', False)
+            CBHbox = gtk.HBox()
+            PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
+            anim = gtk.Image()
+            anim.set_from_animation(PBanim)
+            CBHbox.pack_start(anim, False, False, 0)
+            CBHbox.pack_start(gtk.Label("Enviando"), False, False, 0)
+            redactar.vbox.pack_start(CBHbox, False, False, 0)
+            redactar.show_all()
+            celpara = para.get_text()
+            celpara2 = para2.get_text()
+            CbPara = (celpara, celpara2)
+            CbCaptcha = codigo.get_text()
+            textmensaje = mensaje.get_buffer().get_text(\
+                        mensaje.get_buffer().get_start_iter(),\
+                        mensaje.get_buffer().get_end_iter())
+            self.__queueToServer.put((self.__Okeyko.enviarSms, (CbPara, textmensaje, CbCaptcha),
+                                      {}, post_mandarmensaje, (), {}))
+            return        
+        
+        redactar = gtk.Dialog("OkySms", self)
+        vbox = gtk.VBox()
+        hbox = gtk.HBox()
+        labpara = gtk.Label("Para:")
+        hbox.pack_start(labpara)        
+        #labpara.show()
+        para = gtk.Entry()
+        hbox.pack_start(para)
+        para2 = gtk.Entry()
+        hbox.pack_start(para2)
+        enviar = gtk.Button("Enviar")
+        hbox.pack_end(enviar)        
+        #enviar.show()         
+        redactar.vbox.pack_start(hbox)
+        #hbox.show()
+        labmen = gtk.Label("Mensaje:")
+        redactar.vbox.pack_start(labmen)
+        #labmen.show()
+        mensaje = gtk.TextView()
+        mensaje.set_wrap_mode(gtk.WRAP_WORD)
+        mensaje.set_accepts_tab(False)
+        mensaje.set_left_margin(6)
+        mensaje.set_right_margin(6)
+        mensaje.set_wrap_mode(gtk.WRAP_WORD_CHAR)
+        mensaje.set_size_request(275,100)
+        if men != None:
+            mensaje.get_buffer().set_text(men)
+        redactar.vbox.pack_start(mensaje)
+        #mensaje.show()
+        numlabel = gtk.Label()
+        redactar.vbox.pack_start(numlabel)
+        uCaptcha =  gtk.gdk.PixbufLoader()
+        uCaptcha.write(self.__Okeyko.captcha())
+        Captcha = gtk.image_new_from_pixbuf(uCaptcha.get_pixbuf())
+        uCaptcha.close()
+        redactar.vbox.pack_start(Captcha)
+        codigo = gtk.Entry()
+        redactar.vbox.pack_start(codigo)
+        redactar.show_all()
+        enviar.connect("clicked", mandarSms)
         mensaje.get_buffer().connect("changed", self.actnumlabel, numlabel)
     
     def actnumlabel(self, wid, numlabel):
@@ -728,7 +846,7 @@ class mainWindow(gtk.Window):
         vbox = gtk.VBox()
         
         #Crear el ListStore
-        agenda_store = gtk.ListStore(str, str, str)        
+        agenda_store = gtk.ListStore(str, str, str, str, str)        
         
         #crear TreeView usando el ListStore y setear sus caracteristicas
         agendaTreeView = gtk.TreeView(agenda_store)
@@ -736,33 +854,45 @@ class mainWindow(gtk.Window):
         agendaTreeView.connect("row-activated", self.click_agenda)
 
         #crear Column
-        columnText0 = gtk.TreeViewColumn("Avatar")
+        #columnText0 = gtk.TreeViewColumn("Avatar")
         columnText1 = gtk.TreeViewColumn("Nombre")
         columnText2 = gtk.TreeViewColumn("Descripcion")
+        columnBut = gtk.TreeViewColumn("Borrar")
+        columnBut2 = gtk.TreeViewColumn("Bloquear")
 
         #agrega las Column al TreeView
         #agendaTreeView.append_column(columnText0)
         agendaTreeView.append_column(columnText1)
         agendaTreeView.append_column(columnText2)
+        agendaTreeView.append_column(columnBut)
+        agendaTreeView.append_column(columnBut2)
 
         #crear cellrender para mostrar data
         cellText0 = gtk.CellRendererText()
         cellText1 = gtk.CellRendererText()
         cellText2 = gtk.CellRendererText()
+        cellPix = gtk.CellRendererPixbuf()
+        cellPix2 = gtk.CellRendererPixbuf()
 
         #anade las celdas a las columnas
-        columnText0.pack_start(cellText0, False)
+        #columnText0.pack_start(cellText0, False)
         columnText1.pack_start(cellText1, False)
         columnText2.pack_start(cellText2, False)
+        columnBut.pack_start(cellPix, False)
+        columnBut2.pack_start(cellPix2, False)
         
         #anadir atributos a las columns
-        columnText0.set_attributes(cellText0, text=0)
+        #columnText0.set_attributes(cellText0, text=0)
         columnText1.set_attributes(cellText1, text=1)
         columnText2.set_attributes(cellText2, text=2)
+        columnBut.set_attributes(cellPix, stock_id=3)
+        columnBut2.set_attributes(cellPix2, stock_id=4)
 
-        columnText0.set_sort_column_id(0)
-        columnText1.set_sort_column_id(1)
-        columnText2.set_sort_column_id(2)
+        #columnText0.set_sort_column_id(0)
+        columnText1.set_sort_column_id(0)
+        columnText2.set_sort_column_id(1)
+        columnBut.set_sort_column_id(2)
+        columnBut2.set_sort_column_id(3)
 
         agenda.vbox.pack_start(agendaTreeView, True, True, 0)
 
@@ -773,22 +903,29 @@ class mainWindow(gtk.Window):
         return
 
     def agenda_ventana_add(self, arg, store):
-        print arg, store
+        #print arg, store
         contactos = arg
         for contacto in contactos:
             nombre = contacto[0]
             desc = contacto[1]
+            uId = contacto[2]
             #imgavatar = self.okeyko.pagina(mensaje[4])
             #avatar =  gtk.gdk.PixbufLoader()
             #avatar.write(imgavatar)        
             #store.append([avatar.get_pixbuf(), nombre, desc])
-            store.append(["nose", nombre, desc])
+            store.append([uId, nombre, desc, gtk.STOCK_DELETE, gtk.STOCK_STOP])
         #avatar.close()
         return
 
     def click_agenda(self, widget, row, col):
         model = widget.get_model()
-        self.redactar_ventana( None, model[row][1])
+        colT = col.get_title()
+        if colT == "Borrar":
+            pass
+        elif colT == "Bloquear":
+            pass
+        else:
+            self.redactar_ventana( None, model[row][1])
 
     def mostrarmensaje(self, widget, row, col):
         model = widget.get_model()
@@ -808,6 +945,10 @@ class mainWindow(gtk.Window):
             model.set_value(model.get_iter_from_string("%s:0" % (row)), 0, pixbuf)
             #model.set_value(model.get_iter_from_string("%s:1" % (row)), 1,texto)
             model.set_value(model.get_iter_from_string("%s:9" % (row)), 9, False)
+
+    def mostrarenviado(self, widget, row, col):
+        model = widget.get_model()
+        MensajeVen.EnviadoVen(model, row, self.__Control)        
 
     def Nulo(self, *args, **kwargs):
         return

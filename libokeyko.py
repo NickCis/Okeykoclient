@@ -95,6 +95,7 @@ class okeyko:
         self.__outboxPag = False
         self.__avatar = False
         self.__estado = False
+        self.__captcha = None
         
 
     def login(self, usuario, contra):
@@ -183,7 +184,15 @@ class okeyko:
         #    else:
         #        leido = 0
         #    self.__outbox.append([para, hora, mensaje, Oid, avatar, leido])
+        self.getCaptcha()
         self.agenda_lista()
+
+    def getCaptcha(self):
+        url = '/nv02/CaptchaSecurityImages.php?width=100&height=40&characters=5'
+        self.__captcha = self.pagina(url)
+
+    def captcha(self):
+        return self.__captcha
 
     def getMoreInbox(self):
         lastOId = self.__inbox[len(self.__inbox) - 1][3]
@@ -305,30 +314,6 @@ class okeyko:
         if self.__inbox == False: return
         return [list(a) for a in self.__outbox]
 
-    def badeja_nuevos(self, minid= None):
-        pass
-        #http://www.okeyko.com/nv02/nuevos.php
-        url = "/nv02/nuevos.php"
-        pag = self.pagina(url)
-        print pag
-        return
-        #if resp.text == None: return False
-        #for sub in resp:
-        #    de = sub[0].text if ( sub[0].text != None ) else ""
-        #    hora = "%s // %s" % (sub[1].text,sub[2].text) if ( sub[1].text != None ) | ( sub[2].text != None ) else ""
-        #    mensaje = sub[3].text if ( sub[3].text != None ) else ""
-        #    okid = sub[4].text if ( sub[4].text != None ) else ""
-        #    avatar = sub[5].text if ( sub[5].text != None ) else "perfil.png"
-        #    leido = sub[6].text if ( sub[6].text != None ) else ""
-        #    fav = sub[7].text if ( sub[6].text != None ) else ""
-        #    enviado = sub[8].text if ( sub[6].text != None ) else ""
-        #    mensajes.append([de,hora,mensaje,okid,avatar,leido,fav,enviado])
-        #try:
-        #    asd = mensajes[0][3]
-        #except:
-        #    mensajes = False
-        #return mensajes
-
     def set_leido(self, ok_id):
         ok_id = int(ok_id) + 1
         print ok_id
@@ -362,12 +347,39 @@ class okeyko:
             print "============ Mensaje enviado con exito =========="
             return True, "Mensaje enviado exitosamente"
 
+    def enviarSms(self,para,men,captcha):
+        #http://www.okeyko.com/nv02/SMS.php para= mensaje=
+        if self.__conectado != True: return
+        #men = unicode( men, "utf-8").encode("iso-8859-1")
+        #men = unicode( men, "utf-8")
+        if len(men) > 70:
+            print "============= Error enviando mensaje ========== \n okeyko.enviar: mas de 250 caracteres \n" + para
+            return False, "SMS con mas de 70 caracteres"
+        url = "/nv02/SMS.php"
+        cel = para[0]
+        cel2 = para[1]
+        params =  urllib.urlencode({'cel': cel, 'cel2': cel2, 'mensaje': men,
+                                    'security_code': captcha, 'Enviar':'Enviar'}) 
+        resp = self.pagina(url, params)
+        self.getCaptcha()
+        if resp.find("seguridad incorrecto") > 0:
+            print "============= Error Sms CAPTCHA ========== \n okeyko.enviar: \n" + resp
+            return  False, "Error Captcha"
+        else:
+            print "============ Mensaje enviado con exito =========="
+            return True, "Mensaje enviado exitosamente"
+         
+
     def estadoSet(self, estado):
         #http://www.okeyko.com/nv02/estadoajax.php estado
         if self.__conectado != True: return        
         if len(estado) > 250:
             print "============= Error estado ========== \n okeyko.estadoSet: mas de 250 caracteres \n" + para
             return False, "Mensaje con mas de 250 caracteres"
+        try:
+           estado = estado.encode("iso-8859-1")
+        except:
+           pass
         url = "/nv02/estadoajax.php"
         params =  urllib.urlencode({'estado': estado}) 
         resp = self.pagina(url, params)
