@@ -81,6 +81,14 @@ def unescape(text):
       return text # leave as is
    return re.sub("&#?\w+;", fixup, text)
 
+def removeListInList(lsts, x):
+    for lst in lsts:
+        try:
+            lst.index(x)
+            lsts.remove(lst)
+        except:
+            pass
+
 
 class okeyko:
     def __init__(self):
@@ -93,6 +101,8 @@ class okeyko:
         self.__inbox = False
         self.__outbox = False
         self.__outboxPag = False
+        self.__favbox = False
+        self.__favPag = False
         self.__avatar = False
         self.__estado = False
         self.__captcha = None
@@ -111,7 +121,8 @@ class okeyko:
             self.__conectado = False
             self.__conectado_result = "Usuario o Pass no seteadas"
             return
-        url = "/nv02/validar_usuario.php" #Cambios para okeyko2.0
+        #url = "/nv02/validar_usuario.php" #Cambios para okeyko2.0
+        url = "/v2/validar_usuario.php" #Cambios para okeyko2.0
         params =  urllib.urlencode({'usuario': self.__usuario, 'clave': self.__contra}) #Ok2.0
         #params =  {'usuario': self.__usuario, 'clave': self.__contra} #Ok2.0
         resp = download(self.__dom, url, params, True, None, True, True)
@@ -128,7 +139,8 @@ class okeyko:
         return
 
     def conectado(self):
-        if self.pagina("/nv02/index.php").find("|| Hola") == -1:
+        #if self.pagina("/nv02/index.php").find("|| Hola") == -1:
+        if self.pagina("/v2/index.php").find("|| Hola") == -1:
             self.__conectado = False
             self.set_cookie()
         return self.__conectado, self.__conectado_result
@@ -136,7 +148,8 @@ class okeyko:
     def get_all(self):
         ''' Obtiene: inbox, outbox, avatar, estado'''
         if self.__conectado != True: return
-        url = "/nv02/boceto.php"
+        #url = "/nv02/boceto.php"
+        url = "/v2/boceto.php"
         pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
         avt = pag.find('img',{'title':'Usuario', 'class':'reflect rheight20'})['src']
         self.__avatarLink = avt[avt.rfind('/')+1:]
@@ -184,11 +197,14 @@ class okeyko:
         #    else:
         #        leido = 0
         #    self.__outbox.append([para, hora, mensaje, Oid, avatar, leido])
+        self.__favPag = 1
+        self.__favbox = self.__getFavs(pag)
         self.getCaptcha()
         self.agenda_lista()
 
     def getCaptcha(self):
-        url = '/nv02/CaptchaSecurityImages.php?width=100&height=40&characters=5'
+        #url = '/nv02/CaptchaSecurityImages.php?width=100&height=40&characters=5'
+        url = '/v2/CaptchaSecurityImages.php?width=100&height=40&characters=5'
         self.__captcha = self.pagina(url)
 
     def captcha(self):
@@ -197,7 +213,8 @@ class okeyko:
     def getMoreInbox(self):
         lastOId = self.__inbox[len(self.__inbox) - 1][3]
         params = urllib.urlencode({'lastmsg': str(lastOId)})
-        url = "/nv02/0ajax_more.php"
+        #url = "/nv02/0ajax_more.php"
+        url = "/v2/0ajax_more.php"
         pag = BS(unescape(unicode(self.pagina(url,params), 'latin-1')))
         Ins = self.__getInbox(pag)
         for i in Ins:
@@ -207,12 +224,25 @@ class okeyko:
     def getMoreOutbox(self):
         if self.__conectado != True: return
         self.__outboxPag = self.__outboxPag + 1
-        url = "/nv02/boceto_enviados.php?paginae=%s" % self.__outboxPag
+        #url = "/nv02/boceto_enviados.php?paginae=%s" % self.__outboxPag
+        #url = "/nv02/boceto.php?paginae=%s" % self.__outboxPag
+        url = "/v2/boceto.php?paginae=%s" % self.__outboxPag
         pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
         Outs = self.__getOutbox(pag)
         for o in Outs:
             self.__outbox.append(o)
         return Outs
+
+    def getMoreFavs(self):
+        if self.__conectado != True: return
+        self.__favPag = self.__favPag + 1
+        #url = "/nv02/boceto.php?pagina=%s" % self.__favPag
+        url = "/v2/boceto.php?pagina=%s" % self.__favPag
+        pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
+        Favs = self.__getFavs(pag)
+        for f in Favs:
+            self.__favbox.append(f)
+        return Favs
             
     def __getInbox(self, BShtml):
         lis = BShtml.findAll('li')
@@ -232,12 +262,16 @@ class okeyko:
                 leido = 2
             else:
                 leido = 0
-            fav = 0 #TODO: Get Favorito
+            favImg = li.find('img', {'src': 'images/iconos_mensajes/favoritos2.png'})
+            favHref = favImg.parent['href']
+            #fav = favHref[favHref.rfind('=')+1:]
+            fav = favHref[favHref.rfind('&')+1:]
             menInbox.append([de, hora, mensaje, Oik, avatar, leido, fav])
         return menInbox
 
     def __getOutbox(self, BShtml):
-        outs = BShtml.findAll('div',{'class':'conten_mensaje'})
+        outTab = BShtml.find('div',{'id':'tab2'})
+        outs = outTab.findAll('div',{'class':'conten_mensaje'})
         menOutbox = []
         for out in outs:
             mensaje = out.find('div', {'id':'cuerpo_mensaje'}).text
@@ -256,6 +290,34 @@ class okeyko:
             menOutbox.append([para, hora, mensaje, Oid, avatar, leido]) 
         return menOutbox   
 
+    def __getFavs(self, BShtml):
+        favsTab = BShtml.find('div',{'id':'tab3'})
+        if favsTab.text.find('No tiene mensajes') != -1:
+            return False
+        favs = favsTab.findAll('div',{'class':'conten_mensaje'})
+        menFav = []
+        for fav in favs:
+            mensaje = fav.find('div', {'id':'cuerpo_mensaje'}).text
+            ph = fav.find('div',{'id':'mensaje_head'}).text
+            para = ph[ph.find('">')+2:ph.find('|')]
+            hora = ph[ph.find('|')+1:ph.rfind('|')]
+            Oid = fav.find('div',{'id':'herramientas'}).input['value']
+            avatarSrc = fav.find('img')['src']
+            avatar = avatarSrc[avatarSrc.rfind('/')+1:]
+            leido = fav.find('div',{'id':'herramientas'}).text
+            if leido.find('MOVIL') != -1:
+                leido = 1
+            elif leido.find('PC') != -1:
+                leido = 2
+            else:
+                leido = 0
+            favImg = fav.find('img', {'src': 'images/iconos_mensajes/favoritos2.png'})
+            favHref = favImg.parent['href']
+            #fav = favHref[favHref.rfind('=')+1:]
+            fav = favHref[favHref.rfind('&')+1:]
+            menFav.append([para, hora, mensaje, Oid, avatar, leido, fav]) 
+        return menFav
+
     def userinfo(self):
         if self.__conectado != True: return
         return self.__usuario, self.__avatar, self.__estado
@@ -272,7 +334,8 @@ class okeyko:
         return [list(a) for a in self.__inbox]
         
     def inboxNew(self, minId=0):
-        url = "/nv02/nuevos.php"
+        #url = "/nv02/nuevos.php"
+        url = "/v2/nuevos.php"
         pag = self.pagina(url).strip()
         #print pag
         if pag == "</form >":
@@ -311,15 +374,46 @@ class okeyko:
         ''' Devuelve los mensajes de outbox en una lista
         Formato: [para, hora, mensaje, Oid, leido]'''
         if self.__conectado != True: return
-        if self.__inbox == False: return
+        if self.__outbox == False: return
         return [list(a) for a in self.__outbox]
+
+    def favbox(self):
+        ''' Devuelve los mensajes de favoritos en una lista
+        Formato: [de, hora, mensaje, Oik, avatar, leido, fav] devuelve false si no hay ninguno'''
+        if self.__conectado != True: return
+        if self.__favbox == False: return
+        return [list(a) for a in self.__favbox]
+
+    def getReFavs(self):
+        ''' Vuelve a descargar favs y devuelve los mensajes de favoritos en una lista
+        Formato: [de, hora, mensaje, Oik, avatar, leido, fav] devuelve false si no hay ninguno'''
+        if self.__conectado != True: return
+        #url = "/nv02/boceto.php"
+        url = "/v2/boceto.php"
+        pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
+        self.__favPag = 1
+        self.__favbox = self.__getFavs(pag)
+        return self.favbox()
 
     def set_leido(self, ok_id):
         ok_id = int(ok_id) + 1
-        print ok_id
         params = urllib.urlencode({'lastmsg': str(ok_id)})
-        url = "/nv02/0ajax_more.php"
+        #url = "/nv02/0ajax_more.php"
+        url = "/v2/0ajax_more.php"
         self.pagina(url,params)
+        return
+
+    def setFav(self, favId):
+        #url = '/nv02/fav-add.php?%s' % favId
+        url = '/v2/fav-add.php?%s' % favId
+        self.pagina(url)
+        return
+
+    def setNoFav(self, favId):
+        #url = '/nv02/fav-no.php?%s' % favId
+        url = '/v2/fav-no.php?%s' % favId
+        self.pagina(url)
+        removeListInList(self.__favbox, favId)
         return
 
     def enviar_mensaje(self, para, men):
@@ -331,7 +425,8 @@ class okeyko:
         if len(men) > 250:
             print "============= Error enviando mensaje ========== \n okeyko.enviar: mas de 250 caracteres \n" + para
             return False, "Mensaje con mas de 250 caracteres"
-        url = "/nv02/ajax.php"
+        #url = "/nv02/ajax.php"
+        url = "/v2/ajax.php"
         params =  urllib.urlencode({'para': para, 'mensaje': men}) 
         resp = self.pagina(url, params)
         if resp.find("<b>Warning</b>:") > 0:
@@ -355,7 +450,8 @@ class okeyko:
         if len(men) > 70:
             print "============= Error enviando mensaje ========== \n okeyko.enviar: mas de 250 caracteres \n" + para
             return False, "SMS con mas de 70 caracteres"
-        url = "/nv02/SMS.php"
+        #url = "/nv02/SMS.php"
+        url = "/v2/SMS.php"
         cel = para[0]
         cel2 = para[1]
         params =  urllib.urlencode({'cel': cel, 'cel2': cel2, 'mensaje': men,
@@ -367,8 +463,7 @@ class okeyko:
             return  False, "Error Captcha"
         else:
             print "============ Mensaje enviado con exito =========="
-            return True, "Mensaje enviado exitosamente"
-         
+            return True, "Mensaje enviado exitosamente"         
 
     def estadoSet(self, estado):
         #http://www.okeyko.com/nv02/estadoajax.php estado
@@ -380,7 +475,8 @@ class okeyko:
            estado = estado.encode("iso-8859-1")
         except:
            pass
-        url = "/nv02/estadoajax.php"
+        #url = "/nv02/estadoajax.php"
+        url = "/v2/estadoajax.php"
         params =  urllib.urlencode({'estado': estado}) 
         resp = self.pagina(url, params)
         print "============ Estado cambiado =========="
@@ -389,7 +485,8 @@ class okeyko:
     def agenda_lista(self, oname=False, redown=False):
         if self.__conectado != True: return
         if (self.__agenda_lista == None) | ( redown != False):
-            url = "/nv02/agenda/listado.php"
+            #url = "/nv02/agenda/listado.php"
+            url = "/v2/agenda/listado.php"
             resp = self.pagina(url).replace(" bgcolor='#DFDFDF'", "")
             agdict =  {"{usuario}":"(.*?)", "{nombre}":"(.*?)","{id}":"(.*?)"}
             template = """<tr><td><div align='center'><a href='../oky_agenda.php?agenda=@{usuario}'>@{bla}</a></div></td><td><div align='center'>{nombre}</div></td> <td><div align='center'><a href='eliminar.php?ok_id={id}'><img src='../images/iconos_mensajes/eliminar2.png' border='0' title='Eliminar'/></a><a href='black.php?ok_id={bla}<img src='../images/iconos_mensajes/bloqueo.png'  /></a>"""
@@ -402,30 +499,49 @@ class okeyko:
         return self.__agenda_lista
 
     def agendaAdd(self, nom, desc):
-        url = "/nv02/agenda/index.php"
+        #url = "/nv02/agenda/index.php"
+        url = "/v2/agenda/index.php"
         params =  urllib.urlencode({'nombre_agenda': nom,
                                     'descripcion_agenda': desc,
                                     'action': 'checkdata',
                                     'Submit': 'Agendar'})
         pag = self.pagina(url, params)
-        if pag.find('Ojo Ojo!!') == -1:
+        self.agenda_lista(redown=True)
+        if pag.find('Ojo Ojo!!') != -1:
             return False
         return True
+
+    def agendaDel(self, agId):
+        #http://www.okeyko.com/nv02/agenda/eliminar.php?ok_id=
+        #url = "/nv02/agenda/eliminar.php?ok_id=%s" % agId
+        url = "/v2/agenda/eliminar.php?ok_id=%s" % agId
+        self.pagina(url)
+        removeListInList(self.__agenda_lista, agId)
+
+    def agendaBlock(self, agId):
+        #http://www.okeyko.com/nv02/agenda/black.php?ok_id=
+        #url = "/nv02/agenda/black.php?ok_id=%s" % agId
+        url = "/v2/agenda/black.php?ok_id=%s" % agId
+        self.pagina(url)
 
     def inbox_bor(self, menid):
         if (type(menid) == tuple) | (type(menid) == list):
             menid = "&elimina[]=".join(menid)
         elimina = "?Submit=Eliminar+Seleccion&elimina[]=%s" % menid
-        url = "/nv02/eliminar_sms.php"
+        #url = "/nv02/eliminar_sms.php"
+        url = "/v2/eliminar_sms.php"
         self.pagina(url, elimina)
+        removeListInList(self.__inbox, menid)
         return
         
     def outbox_bor(self, menid):
         if (type(menid) == tuple) | (type(menid) == list):
             menid = "&elimina[]=".join(menid)
         elimina = "?Submit=Eliminar+Seleccion&eliminae[]=%s" % menid
-        url = "/nv02/eliminar_sms_enviados.php"
+        #url = "/nv02/eliminar_sms_enviados.php"
+        url = "/v2/eliminar_sms_enviados.php"
         self.pagina(url, elimina)
+        removeListInList(self.__outbox, menid)
         return
 
     def getInfo(self, html, template, tdict=False, openf=True):

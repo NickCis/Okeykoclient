@@ -92,6 +92,7 @@ class actmen(threading.Thread):
         '''MainWindow debe tener funciones:
             set_inbox() new_inbox()
             set_outbox() new_outbox()
+            set_fav()
              '''
         self.__MainWindow = MainWindow
         self.__Notifications = Notificaciones
@@ -144,8 +145,13 @@ class actmen(threading.Thread):
         #        avatar = self.__Okeyko.avatar(outb[4])
         #        self.__Config.avatarSave(inb[4], avatar)
 
+        favbox = self.__Okeyko.favbox()
+        iterDownAvatar(favbox, self.__Config.avatarLoad, self.__Okeyko.avatar,\
+                        self.__Config.avatarSave)
+
         self.__Cola.put((self.__MainWindow.set_inbox, [inbox], {}))
         self.__Cola.put((self.__MainWindow.set_outbox, [outbox], {}))
+        self.__Cola.put((self.__MainWindow.set_fav, [favbox], {}))
 
         #gtk.gdk.threads_enter()
         #self.__MainWindow.set_inbox(inbox)  
@@ -174,6 +180,8 @@ class actmen(threading.Thread):
                    #notificaciones.newNotification("Mensaje Nuevo", 0, 1, color=col)
                 
 def iterDownAvatar(store, Load, Down, Save):
+    if store == None:
+        return
     for st in store:
         avE, avatar = Load(st[4], False)
         if not avE:

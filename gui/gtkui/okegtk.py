@@ -1,8 +1,10 @@
 import gtk
 import gobject
+import webbrowser as WB
 
 import MensajeVen
 import TextField
+import About
 
 UI = '''<ui>
     <menubar name="MenuBar">
@@ -203,10 +205,15 @@ class mainWindow(gtk.Window):
     def redraw_ventana(self):
         '''Cambia la ventana despues de conectarse '''
         def launchPag(*args): #TODO
-            print args[0].get_name()
+            pag = args[0].get_name()
+            if pag == 'OkePag':
+                WB.open('http://www.okeyko.com')
+            elif pag == 'Pag':
+                WB.open('http://okeykoclient.sourceforge.net')
             
         def aboutClient(*args): #TODO
-            print "About Client"
+            about = About.AboutOkeyko(self.__Config)
+            about.show()
 
         #Aca ya esta conectado, damos la senal que se conecto y cambia la ventana
     #    self.conectwindow = self.mainWindow.child
@@ -307,14 +314,17 @@ class mainWindow(gtk.Window):
         vbox.pack_start(tabsys, True, True)
 
         #Anade tabs        
-        tab1name = "Recividos"
+        tab1name = "Recibidos"
         tab2name = "Enviados"
+        tab3name = "Favoritos"
 
         frame1 = gtk.Frame()
         frame2 = gtk.Frame()
+        frame3 = gtk.Frame()
 
         tabsys.append_page(frame1, gtk.Label(tab1name))
         tabsys.append_page(frame2, gtk.Label(tab2name))
+        tabsys.append_page(frame3, gtk.Label(tab3name))
 
         sw = gtk.ScrolledWindow()
         #sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
@@ -347,12 +357,28 @@ class mainWindow(gtk.Window):
         outboxVbox.pack_end(outboxMoreBut, False)        
 
         frame2.add(outboxVbox)
+
+        sw3 = gtk.ScrolledWindow()
+        sw3.set_policy(gtk.POLICY_NEVER , gtk.POLICY_AUTOMATIC)
+        sw3.set_shadow_type(gtk.SHADOW_IN)
+
+        favVbox = gtk.VBox()        
+        favVbox.pack_start(sw3, True, True)
         
-        # === Recividos
+        favReBut = gtk.Button("Actualizar")
+        favReBut.connect("clicked", self.getReFavs)
+        favMoreBut = gtk.Button("Anteriores Mensajes")
+        favMoreBut.connect("clicked", self.getMoreFavs)
+        favVbox.pack_end(favReBut, False)
+        favVbox.pack_end(favMoreBut, False)
+
+        frame3.add(favVbox)
+        
+        # === Recibidos
         #Crear el ListStore 
         # muestra_avatar, muestra_texto, de, hora, mensaje, Oik, avatar, leido, fav
         #self.inbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, gtk.gdk.Pixbuf, int, int)
-        self.inbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, str, int, int, bool)
+        self.inbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, str, int, str, bool)
         
         #crear TreeView usando el ListStore y setear sus caracteristicas
         mensajeslist = gtk.TreeView(self.inbox_store)
@@ -440,13 +466,45 @@ class mainWindow(gtk.Window):
 
         sw2.add(enviadoslist)
 
+        # === Favoritos
+        #Crear el ListStore 
+        # muestra_avatar, muestra_texto, de, hora, mensaje, Oik, avatar, leido, fav
+        #self.inbox_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, gtk.gdk.Pixbuf, int, int)
+        self.fav_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, str, int, str, bool)
+        
+        #crear TreeView usando el ListStore y setear sus caracteristicas
+        favlist = gtk.TreeView(self.fav_store)
+        favlist.set_headers_visible(False)
+        favlist.connect("row-activated", self.mostrarmensaje)
+        favlist.connect("button_press_event", self.popUpMenMenu, 'fav')
+
+        fcolumnPT = gtk.TreeViewColumn('PT')        #crear Column
+
+        favlist.append_column(fcolumnPT)        #agrega las Column al TreeView
+
+        #crear cellrender para mostrar data
+        fcellPixbuf = gtk.CellRendererPixbuf()
+        fcellPixbuf.set_property('cell-background', 'orange')
+        fcellText = gtk.CellRendererText()
+        fcellText.set_property('cell-background', 'orange')
+
+        #anade las celdas a las columnas
+        fcolumnPT.pack_start(fcellPixbuf, False)
+        fcolumnPT.pack_start(fcellText, True)
+        
+        #anadir atributos a las columns
+        fcolumnPT.set_attributes(fcellPixbuf, pixbuf=0,
+                                  cell_background_set=9)
+        fcolumnPT.set_attributes(fcellText, markup=1,
+                                  cell_background_set=9)
+
+        fcolumnPT.set_sort_column_id(0)
+
+        sw3.add(favlist)
+
         self.show_all()
 
         self.emit('redraw-done')
-
-        #Agregar los textos al ListStore (al final para no colgar la interfaz)
-        #self.__men_list(self.mensajes_store, self.__Okeyko.bandeja())
-        #self.__env_list(self.enviados_store, self.__Okeyko.salida())
 
     def scroll2N(self, treemodel, path, iter, scrollFunc):
         scrollFunc(path)        
@@ -463,7 +521,16 @@ class mainWindow(gtk.Window):
             labRes = 'Responder'
             res = 'res'
             favs = True
+            favfunc = 'fav'
+            favname = "Agregar Favorito"
             bor = 'borIn'
+        elif box =='fav':
+            labRes = 'Responder'
+            res = 'res'
+            favs = True
+            favfunc = 'no-fav'
+            favname = "Sacar Favorito"
+            bor = 'borFav'
         else:
             labRes = 'Reenviar'
             res = 'reenv'
@@ -474,8 +541,8 @@ class mainWindow(gtk.Window):
         menu.append(menuItemRes)
 
         if favs:
-            menuItemFav = gtk.MenuItem("Favoritos")
-            menuItemFav.connect('activate', self.popMenuCallb, 'fav', treeView)
+            menuItemFav = gtk.MenuItem(favname)
+            menuItemFav.connect('activate', self.popMenuCallb, favfunc, treeView)
             menu.append(menuItemFav)
 
         menuItemAg = gtk.MenuItem("Agegar a Agenda")
@@ -491,17 +558,25 @@ class mainWindow(gtk.Window):
 
     def popMenuCallb(self, menuitem, action, treeView):
         listStore, lIter = treeView.get_selection().get_selected()
-        name, men, Oid = listStore.get(lIter, 2, 4, 5)    
+        name, men, Oid, favId = listStore.get(lIter, 2, 4, 5, 8)    
         if action == "res":
             self.redactar_ventana(None, name)
         elif action == "reenv":
             self.redactar_ventana(None, name, men)
         elif action == "fav":
-            pass
+            self.__Okeyko.setFav(favId)
+        elif action == "no-fav":
+            for row in self.fav_store:
+                if str(row[5]) == str(Oid):
+                    self.fav_store.remove(row.iter)
+                    break
+            self.__Okeyko.setNoFav(favId)
         elif action == "ag":
             self.agendaAdd(name)
         elif action == "borIn":
             self.borInbox(Oid)
+        elif action == "borFav":
+            self.borFav(Oid)            
         elif action == "borOut":
             self.borOutbox(Oid)
 
@@ -518,6 +593,17 @@ class mainWindow(gtk.Window):
                 self.outbox_store.remove(row.iter)
                 break
         self.__Okeyko.outbox_bor(Oid)
+
+    def borFav(self, Oid):
+        for row in self.fav_store:
+            if str(row[5]) == str(Oid):
+                self.fav_store.remove(row.iter)
+                break
+        for row in self.inbox_store:
+            if str(row[5]) == str(Oid):
+                self.inbox_store.remove(row.iter)
+                break
+        self.__Okeyko.inbox_bor(Oid)
 
     def getMoreInbox(self, button):    
         def getMoreInboxPost(mensajes):
@@ -552,6 +638,40 @@ class mainWindow(gtk.Window):
         button.set_image(anim)
         anim.show()
 
+    def getMoreFavs(self, button):
+        def getMoreFavsPost(mensajes):
+            self.__menAdd(self.fav_store, mensajes, False)
+            button.set_property("sensitive", True)
+            button.set_property('image', None)
+            button.set_label("Anteriores Mensajes")
+
+        button.set_property("sensitive", False)
+        self.__queueToServer.put((self.__Okeyko.getMoreFavs, (), {},
+                                  getMoreFavsPost, (), {}))
+        button.set_label("Cargando")
+        PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
+        anim = gtk.Image()
+        anim.set_from_animation(PBanim)
+        button.set_image(anim)
+        anim.show()
+
+    def getReFavs(self, button):
+        def getReFavsPost(mensajes):
+            self.set_fav(mensajes)
+            button.set_property("sensitive", True)
+            button.set_property('image', None)
+            button.set_label("Actualizar")
+
+        button.set_property("sensitive", False)
+        self.__queueToServer.put((self.__Okeyko.getReFavs, (), {},
+                                  getReFavsPost, (), {}))
+        button.set_label("Cargando")
+        PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
+        anim = gtk.Image()
+        anim.set_from_animation(PBanim)
+        button.set_image(anim)
+        anim.show()
+
     def set_inbox(self, mensajes):
         # muestra_avatar, muestra_texto, de, hora, mensaje, Oik, avatar, leido, fav
         self.inbox_store.clear()
@@ -574,9 +694,24 @@ class mainWindow(gtk.Window):
         self.__menAdd(self.outbox_store, mensajes, True)
         pass
 
+    def set_fav(self, mensajes):
+        # muestra_avatar, muestra_texto, de, hora, mensaje, Oik, avatar, leido, fav
+        self.fav_store.clear()
+        if not mensajes:
+            return
+        self.__menAdd(self.fav_store, mensajes, False)
+        
+    def new_fav(self, mensajes):
+        if not mensajes:
+            return
+        mensajes.reverse()
+        self.__menAdd(self.fav_store, mensajes, True)
+        pass
+
     def __menAdd(self, store, mensajes, pre=False):
         '''Agrega los mensajes al store especificado'''
-
+        if ( store == None ) or ( mensajes == None ):
+            return
         for mensaje in mensajes:
             texto = '%s' +\
                 '\n<span size="small" foreground="#A4A4A4">%s</span>'
@@ -798,6 +933,28 @@ class mainWindow(gtk.Window):
 
     def agendaAdd(self, nom=None, desc=None):
         '''Alert para agregar a la agenda'''
+
+        def CBagendaAdd(*args, **kargs):
+            def post(*args, **kawrgs):
+                if args[0]:
+                    agenda.destroy()
+                    n("Agregado correctamente")
+                else:
+                    button.set_property('image', None)
+                    labErrorPost = gtk.Label('Error')
+                    agenda.vbox.pack_end(labErrorPost)
+                    agenda.child.set_property('sensitive', True)
+            agenda.child.set_property('sensitive', False)            
+            PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
+            anim = gtk.Image()
+            anim.set_from_animation(PBanim)
+            button.set_image(anim)
+            anim.show()
+            n = self.__Notification.newNotification
+            u = entry1.get_text()
+            d = entry2.get_text()
+            self.__queueToServer.put((self.__Okeyko.agendaAdd, (u, d), {},
+                                      post, (), {}))
         agenda = gtk.Dialog("Agenda", self)
         Hbox1 = gtk.HBox()
         label1 = gtk.Label("Usuario")
@@ -814,31 +971,15 @@ class mainWindow(gtk.Window):
         Hbox2.pack_start(label2)
         Hbox2.pack_start(entry2)
         button = gtk.Button('Agregar')
-        callb = lambda x: self.__agendaAdd(u=entry1.get_text(),
-                                           d=entry2.get_text(),
-                                           w=agenda)
         #button.connect('clicked', self.__agendaAdd, u=entry1.get_text(),
         #                                            d=entry2.get_text())
-        button.connect('clicked', callb)
+        button.connect('clicked', CBagendaAdd)
         agenda.vbox.pack_start(Hbox1)
         agenda.vbox.pack_start(Hbox2)
         agenda.vbox.pack_start(button)
         agenda.show_all()
 
-    def __agendaAdd(self, *args, **kargs):
-        def post(*args):
-            print args
-            if r:
-                w.destroy()
-                n("Agregado correctamente")
-            else:
-                w.vbox.pack_start(gtk.Label('Error'))
-        u = kargs['u']
-        d = kargs['d']
-        w = kargs['w']
-        n = self.__Notification.newNotification
-        self.__queueToServer.put((self.__Okeyko.agendaAdd, (u, d), {},
-                                  post, (w, n), {}))        
+
         
     def agenda_ventana(self, widget=None, data=None):
         '''Creador de la ventana de agenda'''
@@ -921,9 +1062,10 @@ class mainWindow(gtk.Window):
         model = widget.get_model()
         colT = col.get_title()
         if colT == "Borrar":
-            pass
+            self.__Okeyko.agendaDel(model[row][0])
+            model.remove(model[row].iter)
         elif colT == "Bloquear":
-            pass
+            self.__Okeyko.agendaBlock(model[row][0])
         else:
             self.redactar_ventana( None, model[row][1])
 

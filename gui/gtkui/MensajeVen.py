@@ -46,12 +46,16 @@ class MensajeVen(gtk.Window):
             Control['MainWindow'].borInbox(okid)
             self.destroy()
 
+        def favAdd(*args, **kargs):
+            Control['Okeyko'].setFav(favId)
         
         def actcallb(*args, **kargs):
             print args, kargs
+
         gtk.Window.__init__(self)
         self.__Config = Control['Config']
         okid = model[row][5]
+        favId = model[row][8]
         para = model[row][2]
         hora = model[row][3]
         mensaje = model[row][4]
@@ -99,7 +103,7 @@ class MensajeVen(gtk.Window):
                                  ('Age', None, 'Agendar', '<ctrl>a',
                                     None, agendar),
                                  ('Favs', gtk.STOCK_ABOUT, 'Favoritos',
-                                    '<Ctrl>f', 'Agregar a favoritos', actcallb ),
+                                    '<Ctrl>f', 'Agregar a favoritos', favAdd ),
                                  ('Bor', gtk.STOCK_DELETE, 'Borrar', None,
                                     "Borrar Mensaje", borrar)])
 
