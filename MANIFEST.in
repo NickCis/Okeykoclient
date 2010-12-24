@@ -1,5 +1,5 @@
-include README
-include GPL
-include LGPL
-include COPYING
-recursive-include themes *
+recursive-include okeykoclient *
+
+recursive-exclude okeykoclient *.pyc
+recursive-exclude okeykoclient *~
+recursive-exclude okeykoclient .gitignore

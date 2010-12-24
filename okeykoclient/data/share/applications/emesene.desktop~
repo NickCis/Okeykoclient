@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=emesene
+GenericName=emesene
+Comment=Instant messaging client for MSN, Gtalk and Facebook
+Exec=emesene
+Icon=emesene
+Terminal=false
+Type=Application
+Categories=Network;InstantMessaging;
