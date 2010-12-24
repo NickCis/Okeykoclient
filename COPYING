@@ -1,0 +1,17 @@
+- For gui/gtkui/htmltextview.py, GNU LGPL v2.1 applies, see "./LGPL" for
+ the full license text
+
+- For BeautifulSoup.py, New-style BSD visit their page por ful license text: http://www.crummy.com/software/BeautifulSoup/
+
+- Config.py, paths.py, Sound.py, gui/gtkui/Notification.py, gui/gtkui/TextField.py, gui/gtkui/TrayIcon.py were files taken from or inspired by emesene. For these files GNU GPL2+ applies, see ./GPL for the entire license.
+
+- The default sounds (themes/default/*.wav) are taken from Pidgin under the GNU GPL v2.0
+ (or any later version).
+
+- GNOME-Colors is developed by Victor C. <perfectska04@gmail.com>
+ GNOME icons and GNOME-Colors icons are all licensed under the 
+ GNU GPL v2.0 (see "./GPL"). Some original GNOME-Colors icons are listed 
+ as public domain. http://code.google.com/p/gnome-colors
+
+- For everything else, including scripts and data files, GNU GPL v2.0
+ applies, see "./GPL"

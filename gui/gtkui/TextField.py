@@ -1,6 +1,6 @@
 # This file is taken from emesene2 git.
 # 
-# Small changes were made to make it work with Okeykoclient by NicoCis
+# Small changes were made to make it work with Okeykoclient by NickCis
 #
 # Taken from emesene:
 #    Emesene is free software; you can redistribute it and/or modify
