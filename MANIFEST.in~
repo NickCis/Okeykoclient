@@ -1,5 +1,0 @@
-include README
-include GPL
-include LGPL
-include COPYING
-recursive-include themes *
