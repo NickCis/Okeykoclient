@@ -1,9 +1,8 @@
 import re
 import httplib, urllib
 import htmlentitydefs
-from BeautifulSoup import BeautifulSoup as BS
+from BeautifulSoup import BeautifulSoup
 #from xml.etree import ElementTree as ET
-
 
 def download(dom, url, params=None, ref=False, cookie=None, ctype=False, clength=False):
 
@@ -81,6 +80,9 @@ def unescape(text):
       return text # leave as is
    return re.sub("&#?\w+;", fixup, text)
 
+def BS(html):
+    return BeautifulSoup(unescape(html), convertEntities=BeautifulSoup.HTML_ENTITIES)
+
 def removeListInList(lsts, x):
     for lst in lsts:
         try:
@@ -150,7 +152,8 @@ class okeyko:
         if self.__conectado != True: return
         #url = "/nv02/boceto.php"
         url = "/v2/boceto.php"
-        pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
+        #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
+        pag = BS(unicode(self.pagina(url), 'latin-1'))
         avt = pag.find('img',{'title':'Usuario', 'class':'reflect rheight20'})['src']
         self.__avatarLink = avt[avt.rfind('/')+1:]
         self.__avatar = self.avatar(self.__avatarLink,'m')
@@ -215,7 +218,8 @@ class okeyko:
         params = urllib.urlencode({'lastmsg': str(lastOId)})
         #url = "/nv02/0ajax_more.php"
         url = "/v2/0ajax_more.php"
-        pag = BS(unescape(unicode(self.pagina(url,params), 'latin-1')))
+        #pag = BS(unescape(unicode(self.pagina(url,params), 'latin-1')))
+        pag = BS(unicode(self.pagina(url,params), 'latin-1'))
         Ins = self.__getInbox(pag)
         for i in Ins:
             self.__inbox.append(i)
@@ -227,7 +231,8 @@ class okeyko:
         #url = "/nv02/boceto_enviados.php?paginae=%s" % self.__outboxPag
         #url = "/nv02/boceto.php?paginae=%s" % self.__outboxPag
         url = "/v2/boceto.php?paginae=%s" % self.__outboxPag
-        pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
+        #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
+        pag = BS(unicode(self.pagina(url), 'latin-1'))
         Outs = self.__getOutbox(pag)
         for o in Outs:
             self.__outbox.append(o)
@@ -238,7 +243,8 @@ class okeyko:
         self.__favPag = self.__favPag + 1
         #url = "/nv02/boceto.php?pagina=%s" % self.__favPag
         url = "/v2/boceto.php?pagina=%s" % self.__favPag
-        pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
+        #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
+        pag = BS(unicode(self.pagina(url), 'latin-1'))
         Favs = self.__getFavs(pag)
         for f in Favs:
             self.__favbox.append(f)
@@ -340,7 +346,8 @@ class okeyko:
         #print pag
         if pag == "</form >":
             return False
-        pag = BS(unescape(unicode(pag, 'latin-1')))
+        #pag = BS(unescape(unicode(pag, 'latin-1')))
+        pag = BS(unicode(pag, 'latin-1'))
         tables = pag.findAll('table')
         tablesN = len(tables) / 3
         inboxNew = []
@@ -390,7 +397,8 @@ class okeyko:
         if self.__conectado != True: return
         #url = "/nv02/boceto.php"
         url = "/v2/boceto.php"
-        pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
+        #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
+        pag = BS(unicode(self.pagina(url), 'latin-1'))
         self.__favPag = 1
         self.__favbox = self.__getFavs(pag)
         return self.favbox()
