@@ -1,0 +1,5 @@
+#!/bin/sh
+# Launch Okeykoclient
+cd /usr/share/pyshared/okeykoclient/
+python okeyko.py $@
+

@@ -12,7 +12,7 @@ import platform
 
 python_version = platform.python_version()[0:3]
 
-setup_info = dict(name = 'Okeykoclient',
+setup_info = dict(name = 'okeykoclient',
         version = '0',
         description = 'Cliente para la red de mesajeria Okeyko',
         author = 'Nicolas Cisco, se agradece a toda la comunidad de emesene y a la de Pyar',
@@ -28,9 +28,9 @@ setup_info = dict(name = 'Okeykoclient',
         "Programming Language :: Python",
         "Topic :: Communications :: Chat",
         ],
-        ext_package = "Okeykoclient",
+        ext_package = "okeykoclient",
         include_package_data = True,
-        package_data = {"Okeykoclient" : ['themes/*/*']})
+        package_data = {"okeykoclient" : ['themes/*/*']})
 
 def windows_check():
     return platform.system() in ('Windows', 'Microsoft')
@@ -87,20 +87,21 @@ else:
     # Data files to be installed to the system
     _data_files = [
         ('share/icons/scalable/apps', ['okeykoclient/data/icons/scalable/apps/okeykoclient.svg']),
-        ('share/icons/hicolor/16x16/apps', ['okeykoclient/data/hicolor/16x16/apps/okeykoclient.png']),
-        ('share/icons/hicolor/22x22/apps', ['okeykoclient/data/hicolor/22x22/apps/okeykoclient.png']),
-        ('share/icons/hicolor/24x24/apps', ['okeykoclient/data/hicolor/24x24/apps/okeykoclient.png']),
-        ('share/icons/hicolor/32x32/apps', ['okeykoclient/data/hicolor/32x32/apps/okeykoclient.png']),
-        ('share/icons/hicolor/36x36/apps', ['okeykoclient/data/hicolor/36x36/apps/okeykoclient.png']),
-        ('share/icons/hicolor/48x48/apps', ['okeykoclient/data/hicolor/48x48/apps/okeykoclient.png']),
-        ('share/icons/hicolor/64x64/apps', ['okeykoclient/data/hicolor/64x64/apps/okeykoclient.png']),
-        ('share/icons/hicolor/72x72/apps', ['okeykoclient/data/hicolor/72x72/apps/okeykoclient.png']),
-        ('share/icons/hicolor/96x96/apps', ['okeykoclient/data/hicolor/96x96/apps/okeykoclient.png']),
-        ('share/icons/hicolor/128x128/apps', ['okeykoclient/data/hicolor/128x128/apps/okeykoclient.png']),
-        ('share/icons/hicolor/192x192/apps', ['okeykoclient/data/hicolor/192x192/apps/okeykoclient.png']),
-        ('share/icons/hicolor/256x256/apps', ['okeykoclient/data/hicolor/256x256/apps/okeykoclient.png']),
+        ('share/icons/hicolor/16x16/apps', ['okeykoclient/data/icons/hicolor/16x16/apps/okeykoclient.png']),
+        ('share/icons/hicolor/22x22/apps', ['okeykoclient/data/icons/hicolor/22x22/apps/okeykoclient.png']),
+        ('share/icons/hicolor/24x24/apps', ['okeykoclient/data/icons/hicolor/24x24/apps/okeykoclient.png']),
+        ('share/icons/hicolor/32x32/apps', ['okeykoclient/data/icons/hicolor/32x32/apps/okeykoclient.png']),
+        ('share/icons/hicolor/36x36/apps', ['okeykoclient/data/icons/hicolor/36x36/apps/okeykoclient.png']),
+        ('share/icons/hicolor/48x48/apps', ['okeykoclient/data/icons/hicolor/48x48/apps/okeykoclient.png']),
+        ('share/icons/hicolor/64x64/apps', ['okeykoclient/data/icons/hicolor/64x64/apps/okeykoclient.png']),
+        ('share/icons/hicolor/72x72/apps', ['okeykoclient/data/icons/hicolor/72x72/apps/okeykoclient.png']),
+        ('share/icons/hicolor/96x96/apps', ['okeykoclient/data/icons/hicolor/96x96/apps/okeykoclient.png']),
+        ('share/icons/hicolor/128x128/apps', ['okeykoclient/data/icons/hicolor/128x128/apps/okeykoclient.png']),
+        ('share/icons/hicolor/192x192/apps', ['okeykoclient/data/icons/hicolor/192x192/apps/okeykoclient.png']),
+        ('share/icons/hicolor/256x256/apps', ['okeykoclient/data/icons/hicolor/256x256/apps/okeykoclient.png']),
         ('share/applications', ['okeykoclient/data/share/applications/okeykoclient.desktop']),
-        ('share/pixmaps', ['okeykoclient/data/pixmaps/okeykoclient.png', 'okeykoclient/data/pixmaps/okeykoclient.xpm'])
+        ('share/pixmaps', ['okeykoclient/data/pixmaps/okeykoclient.png', 'okeykoclient/data/pixmaps/okeykoclient.xpm']),
+        ('bin', ['okeykoclient/data/bin/okeykoclient'])
         #('share/man/man1', ['docs/man/emesene.1'])
     ]
 
