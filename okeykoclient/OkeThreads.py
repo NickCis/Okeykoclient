@@ -134,28 +134,26 @@ class actmen(threading.Thread):
 
         iterDownAvatar(inbox, self.__Config.avatarLoad, self.__Okeyko.avatar,\
                         self.__Config.avatarSave)
-        #for inb in inbox:
-        #    avE, avatar = self.__Config.avatarLoad(inb[4])
-        #    if not avE:
-        #        avatar = self.__Okeyko.avatar(inb[4])
-        #        self.__Config.avatarSave(inb[4], avatar)
+
+        self.__Cola.put((self.__MainWindow.set_inbox, [inbox], {}))
 
         outbox = self.__Okeyko.outbox()
         iterDownAvatar(outbox, self.__Config.avatarLoad, self.__Okeyko.avatar,\
                         self.__Config.avatarSave)
-        #for outb in outbox:
-        #    avE, avatar = self.__Config.avatarLoad(inb[4])
-        #    if not avE:
-        #        avatar = self.__Okeyko.avatar(outb[4])
-        #        self.__Config.avatarSave(inb[4], avatar)
+
+        self.__Cola.put((self.__MainWindow.set_outbox, [outbox], {}))
 
         favbox = self.__Okeyko.favbox()
         iterDownAvatar(favbox, self.__Config.avatarLoad, self.__Okeyko.avatar,\
                         self.__Config.avatarSave)
 
-        self.__Cola.put((self.__MainWindow.set_inbox, [inbox], {}))
-        self.__Cola.put((self.__MainWindow.set_outbox, [outbox], {}))
         self.__Cola.put((self.__MainWindow.set_fav, [favbox], {}))
+
+        pensamientos = self.__Okeyko.pensamientos()
+        iterDownAvatar(pensamientos, self.__Config.avatarLoad, self.__Okeyko.avatar,\
+                        self.__Config.avatarSave)
+
+        self.__Cola.put((self.__MainWindow.set_pen, [pensamientos], {}))
 
         while self.loop:
             time.sleep(15) #TODO: evaluar el tiempo. Convertirlo a config
@@ -175,11 +173,16 @@ class actmen(threading.Thread):
                     self.__Cola.put((self.__Notifications.newNotification, \
                                         ("Mensaje Nuevo", 0), {}))
                    #notificaciones.newNotification("Mensaje Nuevo", 0, 1, color=col)
-            outbox = self.__Okeyko.outboxNew()
+            outbox, pensamientos = self.__Okeyko.newOutPen()
             if outbox != False:
                 iterDownAvatar(outbox, self.__Config.avatarLoad,\
                     self.__Okeyko.avatar, self.__Config.avatarSave)
                 self.__Cola.put((self.__MainWindow.new_outbox, [outbox], {}))
+
+            if pensamientos != False:
+                iterDownAvatar(pensamientos, self.__Config.avatarLoad,\
+                    self.__Okeyko.avatar, self.__Config.avatarSave)
+                self.__Cola.put((self.__MainWindow.new_pen, [pensamientos], {}))
 
 def iterDownAvatar(store, Load, Down, Save):
     if store == None:

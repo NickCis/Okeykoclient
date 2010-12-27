@@ -1,5 +1,6 @@
 import sys
 import gtk
+import pango
 import gobject
 import webbrowser as WB
 
@@ -216,6 +217,25 @@ class mainWindow(gtk.Window):
             about = About.AboutOkeyko(self.__Config)
             about.show()
 
+        def resize_wrap(scroll, allocation, treeview, column, cell):
+            otherColumns = (c for c in treeview.get_columns() if c != column)
+            newWidth = allocation.width - sum(c.get_width() for c in otherColumns)
+            #newWidth -= treeview.style_get_property("horizontal-separator") * 4
+            newWidth -= treeview.style_get_property("horizontal-separator") * 40
+            if cell.props.wrap_width == newWidth or newWidth <= 0:
+                return
+            if newWidth < 150:
+                newWidth = 150
+            cell.props.wrap_width = newWidth
+            column.set_property('min-width', newWidth + 10)
+            column.set_property('max-width', newWidth + 10)            
+            store = treeview.get_model()
+            iter = store.get_iter_first()
+            while iter and store.iter_is_valid(iter):
+                store.row_changed(store.get_path(iter), iter)
+                iter = store.iter_next(iter)
+                treeview.set_size_request(0,-1)
+
         #Aca ya esta conectado, damos la senal que se conecto y cambia la ventana
     #    self.conectwindow = self.mainWindow.child
         self.remove(self.child)     
@@ -318,14 +338,17 @@ class mainWindow(gtk.Window):
         tab1name = "Recibidos"
         tab2name = "Enviados"
         tab3name = "Favoritos"
+        tab4name = "Pensamientos"
 
         frame1 = gtk.Frame()
         frame2 = gtk.Frame()
         frame3 = gtk.Frame()
+        frame4 = gtk.Frame()
 
         tabsys.append_page(frame1, gtk.Label(tab1name))
         tabsys.append_page(frame2, gtk.Label(tab2name))
         tabsys.append_page(frame3, gtk.Label(tab3name))
+        tabsys.append_page(frame4, gtk.Label(tab4name))
 
         sw = gtk.ScrolledWindow()
         #sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
@@ -374,6 +397,19 @@ class mainWindow(gtk.Window):
         favVbox.pack_end(favMoreBut, False)
 
         frame3.add(favVbox)
+
+        sw4 = gtk.ScrolledWindow()
+        sw4.set_policy(gtk.POLICY_NEVER , gtk.POLICY_AUTOMATIC)
+        sw4.set_shadow_type(gtk.SHADOW_IN)
+
+        penVbox = gtk.VBox()        
+        penVbox.pack_start(sw4, True, True)
+        
+        penReBut = gtk.Button("Actualizar")
+        penReBut.connect("clicked", self.getRePen)
+        penVbox.pack_end(penReBut, False)        
+
+        frame4.add(penVbox)
         
         # === Recibidos
         #Crear el ListStore 
@@ -502,6 +538,41 @@ class mainWindow(gtk.Window):
         fcolumnPT.set_sort_column_id(0)
 
         sw3.add(favlist)
+
+        # === Pensamientos
+        #Crear el ListStore 
+        # muestra_avatar, muestra_texto, de, hora, mensaje, Okid avatar
+        self.pen_store = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str, str, str, str)
+        
+        #crear TreeView usando el ListStore y setear sus caracteristicas
+        penlist = gtk.TreeView(self.pen_store)
+        penlist.set_headers_visible(False)
+        #penlist.connect("row-activated", self.mostrarmensaje)
+        #penlist.connect("button_press_event", self.popUpMenMenu, 'pen')
+
+        pcolumnPT = gtk.TreeViewColumn('PT')        #crear Column
+
+        penlist.append_column(pcolumnPT)        #agrega las Column al TreeView
+
+        #crear cellrender para mostrar data
+        pcellPixbuf = gtk.CellRendererPixbuf()
+        pcellText = gtk.CellRendererText()
+        pcellText.set_property("wrap-width", 0)
+        pcellText.set_property("wrap-mode", pango.WRAP_WORD_CHAR)
+
+        
+        #anade las celdas a las columnas
+        pcolumnPT.pack_start(pcellPixbuf, False)
+        pcolumnPT.pack_start(pcellText, True)
+        
+        #anadir atributos a las columns
+        pcolumnPT.set_attributes(pcellPixbuf, pixbuf=0)
+        pcolumnPT.set_attributes(pcellText, markup=1,)
+
+        pcolumnPT.set_sort_column_id(0)
+
+        sw4.add(penlist)
+        sw4.connect_after('size-allocate', resize_wrap, penlist, pcolumnPT, pcellText)
 
         self.show_all()
 
@@ -673,6 +744,23 @@ class mainWindow(gtk.Window):
         button.set_image(anim)
         anim.show()
 
+    def getRePen(self, button):
+        def getRePenPost(pensamientos):
+            self.set_pen(pensamientos)
+            button.set_property("sensitive", True)
+            button.set_property('image', None)
+            button.set_label("Actualizar")
+
+        button.set_property("sensitive", False)
+        self.__queueToServer.put((self.__Okeyko.getRePen, (), {},
+                                  getRePenPost, (), {}))
+        button.set_label("Cargando")
+        PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
+        anim = gtk.Image()
+        anim.set_from_animation(PBanim)
+        button.set_image(anim)
+        anim.show()
+
     def set_inbox(self, mensajes):
         # muestra_avatar, muestra_texto, de, hora, mensaje, Oik, avatar, leido, fav
         self.inbox_store.clear()
@@ -707,7 +795,19 @@ class mainWindow(gtk.Window):
             return
         mensajes.reverse()
         self.__menAdd(self.fav_store, mensajes, True)
-        pass
+
+    def set_pen(self, pensamientos):
+        # muestra_avatar, muestra_texto, de, hora, mensaje, Oik, avatar, leido, fav
+        self.pen_store.clear()
+        if not pensamientos:
+            return
+        self.__penAdd(self.pen_store, pensamientos, False)
+        
+    def new_pen(self, pensamientos):
+        if not pensamientos:
+            return
+        pensamientos.reverse()
+        self.__penAdd(self.pen_store, pensamientos, True)
 
     def __menAdd(self, store, mensajes, pre=False):
         '''Agrega los mensajes al store especificado'''
@@ -757,6 +857,29 @@ class mainWindow(gtk.Window):
         gc = pixmap.new_gc()
         pixmap.draw_pixbuf(gc, adpixbuf, 0, 0, posx, posy)
         return pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(), 0, 0, 0, 0, -1, -1)
+
+    def __penAdd(self, store, pensamientos, pre=False):
+        '''Agrega los pensamientos al store especificado'''
+        if ( store == None ) or ( pensamientos == None ):
+            return
+        for pensamiento in pensamientos:
+            texto = '<b>%s:\n</b>%s\n' +\
+                '<span size="small" foreground="#A4A4A4">%s</span>'
+            texto = texto % (pensamiento[0], pensamiento[2], pensamiento[1])
+            avatarG = gtk.gdk.pixbuf_new_from_file(
+                self.__Config.avatarLoad(pensamiento[4],False)[1])
+            avatarG_w = avatarG.get_width()
+            avatarG_h = avatarG.get_height()
+            avatarM_h = 40 * avatarG_h / avatarG_w
+            avatarM = avatarG.scale_simple(40,avatarM_h,gtk.gdk.INTERP_NEAREST)
+            row = list([avatarM, texto])
+            for c in pensamiento:
+                row.append(c)
+            if pre:
+                store.prepend(row)
+            else:
+                store.append(row)
+        return
 
     def estadoSet(self, widget, estado, getText, *args, **kargs):
         self.__Okeyko.estadoSet(getText)

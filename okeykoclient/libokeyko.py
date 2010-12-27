@@ -111,6 +111,7 @@ class okeyko:
         self.__estado = False
         self.__captcha = None
         self.__envio = False
+        self.__pensamientos = None
         
 
     def login(self, usuario, contra):
@@ -169,6 +170,7 @@ class okeyko:
         self.__outbox = self.__getOutbox(pag)
         self.__favPag = 1
         self.__favbox = self.__getFavs(pag)
+        self.__pensamientos = self.__getPensamientos(pag)
         self.getCaptcha()
         self.agenda_lista()
 
@@ -319,6 +321,21 @@ class okeyko:
             menFav.append([para, hora, mensaje, Oid, avatar, leido, fav]) 
         return menFav
 
+    def __getPensamientos(self, BShtml):
+        penTab = BShtml.find('div',{'id':'tab4'})
+        pens = penTab.findAll('table')
+        pensamientos = []
+        for pen in pens:
+            de = pen.findAll('td')[1].text[4:]
+            trs = pen.findAll('tr')
+            mensaje = trs[1].text
+            hora = trs[2].text
+            Oid = 'a'
+            avatar = pen.find('img')['src']
+            avatar = avatar[avatar.rfind('/')+1:]
+            pensamientos.append([de, hora, mensaje, Oid, avatar]) 
+        return pensamientos
+
     def userinfo(self):
         if self.__conectado != True: return
         return self.__usuario, self.__avatar, self.__estado
@@ -379,15 +396,16 @@ class okeyko:
         if self.__outbox == False: return
         return [list(a) for a in self.__outbox]
 
-    def outboxNew(self):
+    def outboxNew(self, pag=None):
         '''Devuelve si hay, mensajes enviados nuevos'''
         if self.__conectado != True: return
         if self.__envio == False:
             return False
         else:
             self.__envio = False
-        url = "/v2/boceto.php"
-        pag = BS(unicode(self.pagina(url), 'latin-1'))
+        if pag == None:
+            url = "/v2/boceto.php"
+            pag = BS(unicode(self.pagina(url), 'latin-1'))
         Outs = self.__getOutbox(pag)
         firstOutId = int(self.__outbox[0][3])
         ret = []
@@ -421,6 +439,52 @@ class okeyko:
         self.__favPag = 1
         self.__favbox = self.__getFavs(pag)
         return self.favbox()
+    
+    def pensamientos(self):
+        ''' Devuelve los pensamientos en una lista
+        Formato: [de, hora, mensaje, Oid?, avatar]'''
+        if self.__conectado != True: return
+        if self.__pensamientos == False: return
+        return [list(a) for a in self.__pensamientos]
+
+    def getRePen(self):
+        ''' Vuelve a descargar pensamientos y devuelve los mensajes de favoritos en una lista
+        Formato: [de, hora, mensaje, Oik, avatar] devuelve false si no hay ninguno'''
+        if self.__conectado != True: return
+        url = "/v2/boceto.php"
+        pag = BS(unicode(self.pagina(url), 'latin-1'))
+        self.__pensamientos = self.__getPensamientos(pag)
+        return self.pensamientos()
+
+    def pensamientosNew(self, pag=None):
+        '''Devuelve si hay, pensamientos nuevos'''
+        if self.__conectado != True: return
+        if pag == None:
+            url = "/v2/boceto.php"
+            pag = BS(unicode(self.pagina(url), 'latin-1'))
+        Pens = self.__getPensamientos(pag)
+        firstPenDate = self.__pensamientos[0][1]
+        ret = []
+        for p in Pens:
+            if firstPenDate == p[1]:
+                break
+            else:
+                ret.append(p)
+        if len(ret) != 0:
+            ret.reverse()
+            for r in ret:
+                self.__pensamientos.insert(0, r)
+            ret.reverse()
+            return ret
+        else:
+            return False
+
+    def newOutPen(self):
+        '''Binding para outboxNew y pensamientosNew para hacer una sola desgarga
+           de la pagina. Devuelve: [outbouxNew] [pensamientosNew]'''
+        url = "/v2/boceto.php"
+        pag = BS(unicode(self.pagina(url), 'latin-1'))
+        return self.outboxNew(pag), self.pensamientosNew(pag)
 
     def set_leido(self, ok_id):
         ok_id = int(ok_id) + 1
