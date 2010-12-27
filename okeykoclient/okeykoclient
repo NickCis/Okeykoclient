@@ -8,6 +8,6 @@ try:
 except:
     pass
 
-import okeyko
+import okeykoclient
 
-okeyko.main()
+okeykoclient.main()
