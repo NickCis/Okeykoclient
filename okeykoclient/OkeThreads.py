@@ -19,7 +19,7 @@ def queue_maker():
     return Queue.Queue(), Queue.Queue()
 
 class server(threading.Thread):
-    ''' Recive que funcion ejecutar en thread y pone en colaOut funcion callback 
+    ''' Recibe que funcion ejecutar en thread y pone en colaOut funcion callback 
         colaIn debe ser: method, args, kwargs, callback, cargs, ckwargs
                          func, (), {}, func, (), {}
         cola out devuelve: callback, (resultado, cargs,), ckwargs
@@ -106,7 +106,9 @@ class actmen(threading.Thread):
         except:
             MainWindow = self.__MainWindow
             Notifications = self.__Notifications
-            self = actmen(self.__Control)
+            Control = self.__Control
+            self.join()
+            self = actmen(Control)
             self.__MainWindow = MainWindow
             self.__Notifications = Notifications
             self.start()
