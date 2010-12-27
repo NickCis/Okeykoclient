@@ -15,7 +15,7 @@ import paths
 
 
 DEFAULT_GLOBAL_CONFIG = {
-    'mainWindowGeometry': '410x1100+1461+25',
+    'mainWindowGeometry': '205x550+0+0',
     'theme': 'default',
     'rememberMe': True,
     'rememberMyPassword': False,
@@ -24,7 +24,7 @@ DEFAULT_GLOBAL_CONFIG = {
 
 
 DEFAULT_USER_CONFIG = {
-    'menWindowGeometry': '410x300+1461+25',
+    'menWindowGeometry': '205x150+0+0',
     'themeEmot': 'default',
     'themeSound': 'default',
     'themeNot': 'default',
