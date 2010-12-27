@@ -76,8 +76,8 @@ if os.name == 'nt':
     }
 
     setup(requires    = ["gtk"],
-        windows        = [{"script": "okeyko.py", 'icon_resources': [(1, "okeykoclient.ico")], "dest_base": "emesene"}],
-        console        = [{"script": "okeyko.py", "dest_base": "emesene_debug"}],
+        windows        = [{"script": "okeyko.py", 'icon_resources': [(1, "okeykoclient.ico")], "dest_base": "okeykoclient"}],
+        console        = [{"script": "okeyko.py", "dest_base": "okeykoclient_debug"}],
         options        = opts,
         data_files    = _data_files, **setup_info)
 

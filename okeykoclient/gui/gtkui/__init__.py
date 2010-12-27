@@ -1,3 +1,4 @@
+import os
 import pygtk
 pygtk.require('2.0')
 import gtk
@@ -17,8 +18,9 @@ def gtk_main(Control):
         Control['Okeyko'].disconnect()
         Control['ActMen'].thStop()
         Tray.buildMenu()
-
-    gtk.gdk.threads_init()
+    
+    if os.name != 'nt':
+        gtk.gdk.threads_init()
 
     OKC_FOKY = 'okc-foky'
     gtk.stock_add(((OKC_FOKY, '_FOKY', gtk.gdk.CONTROL_MASK, gtk.gdk.keyval_from_name('P'), 'FOKY'),))

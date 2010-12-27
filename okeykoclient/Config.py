@@ -302,7 +302,7 @@ class Main:
         print "Saving avatar"
         avatarPath = os.path.join(paths.CONFIG_DIR, self.currentUser, 'avatars', avatar)
         try:
-            avatarFile = open(avatarPath, 'w')
+            avatarFile = open(avatarPath, 'wb')
             avatarFile.write(avatarimg)
             avatarFile.close()
             return True, avatarPath
