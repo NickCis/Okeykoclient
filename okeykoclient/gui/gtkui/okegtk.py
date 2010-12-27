@@ -1,3 +1,4 @@
+import sys
 import gtk
 import gobject
 import webbrowser as WB
@@ -1102,7 +1103,7 @@ class mainWindow(gtk.Window):
     def close_application(self, widget, event=None, data=None):
         self.saveMainWindowGeometry()
         gtk.main_quit()
-        exit()
+        sys.exit(0)
 
     def saveMainWindowGeometry(self):
         xPos, yPos = self.get_position()

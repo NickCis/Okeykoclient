@@ -93,6 +93,8 @@ class actmen(threading.Thread):
             set_inbox() new_inbox()
             set_outbox() new_outbox()
             set_fav()
+            new_inbox()
+            new_outbox()
              '''
         self.__MainWindow = MainWindow
         self.__Notifications = Notificaciones
@@ -155,15 +157,8 @@ class actmen(threading.Thread):
         self.__Cola.put((self.__MainWindow.set_outbox, [outbox], {}))
         self.__Cola.put((self.__MainWindow.set_fav, [favbox], {}))
 
-        #gtk.gdk.threads_enter()
-        #self.__MainWindow.set_inbox(inbox)  
-        #self.__MainWindow.set_outbox(outbox)
-        #gtk.gdk.threads_leave()
-
-        #while True:
         while self.loop:
             time.sleep(15) #TODO: evaluar el tiempo. Convertirlo a config
-            #mensajes = self.__Okeyko.badeja_nuevos(self.__MinId)
             mensajes = self.__Okeyko.inboxNew(self.__MinId)
             if mensajes != False:
                 self.__MinId = mensajes[0][3]
@@ -180,7 +175,12 @@ class actmen(threading.Thread):
                     self.__Cola.put((self.__Notifications.newNotification, \
                                         ("Mensaje Nuevo", 0), {}))
                    #notificaciones.newNotification("Mensaje Nuevo", 0, 1, color=col)
-                
+            outbox = self.__Okeyko.outboxNew()
+            if outbox != False:
+                iterDownAvatar(outbox, self.__Config.avatarLoad,\
+                    self.__Okeyko.avatar, self.__Config.avatarSave)
+                self.__Cola.put((self.__MainWindow.new_outbox, [outbox], {}))
+
 def iterDownAvatar(store, Load, Down, Save):
     if store == None:
         return

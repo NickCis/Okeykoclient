@@ -103,11 +103,14 @@ class okeyko:
         self.__inbox = False
         self.__outbox = False
         self.__outboxPag = False
+        self.__outboxBor = False
         self.__favbox = False
         self.__favPag = False
+        self.__favBor = False
         self.__avatar = False
         self.__estado = False
         self.__captcha = None
+        self.__envio = False
         
 
     def login(self, usuario, contra):
@@ -162,44 +165,8 @@ class okeyko:
         except:
             self.__estado = ""
         self.__inbox = self.__getInbox(pag)
-        #lis = pag.findAll('li')
-        #self.__inbox = []
-        #for i in range(0, len(lis) - 4 ):
-        #    li = lis[i + 4]
-        #    de = li.findAll('a')[1].string
-        #    hora = li.find('td',{'align':'right'}).text
-        #    mensaje = li.findAll('br')[5].next
-        #    Oik = li.label['for']
-        #    avatar = li.img['src'][li.img['src'].rfind('/')+1:]
-        #    leido = li.findAll('div',{'style': ' font-size:11px; color:#666;' \
-        #            })[0].contents[0]
-        #    if leido.find('MOVIL') != -1:
-        #        leido = 1
-        #    elif leido.find('PC') != -1:
-        #        leido = 2
-        #    else:
-        #        leido = 0
-        #    fav = 0 #TODO: Get Favorito
-        #    self.__inbox.append([de, hora, mensaje, Oik, avatar, leido, fav])
         self.__outboxPag = 1
         self.__outbox = self.__getOutbox(pag)
-        #outs = pag.findAll('div',{'class':'conten_mensaje'})
-        #self.__outbox = []
-        #for out in outs:
-        #    mensaje = out.find('div', {'id':'cuerpo_mensaje'}).text
-        #    ph = out.find('div',{'id':'mensaje_head'}).text
-        #    para = ph[ph.find('">')+2:ph.find('|')]
-        #    hora = ph[ph.find('|')+1:ph.rfind('|')]
-        #    Oid = out.find('div',{'id':'herramientas'}).input['value']
-        #    avatar = avt[avt.rfind('/')+1:] #TODO: Get avatar
-        #    leido = out.find('div',{'id':'herramientas'}).text
-        #    if leido.find('MOVIL') != -1:
-        #        leido = 1
-        #    elif leido.find('PC') != -1:
-        #        leido = 2
-        #    else:
-        #        leido = 0
-        #    self.__outbox.append([para, hora, mensaje, Oid, avatar, leido])
         self.__favPag = 1
         self.__favbox = self.__getFavs(pag)
         self.getCaptcha()
@@ -227,28 +194,56 @@ class okeyko:
 
     def getMoreOutbox(self):
         if self.__conectado != True: return
-        self.__outboxPag = self.__outboxPag + 1
+        if self.__outboxBor == False:
+            self.__outboxPag = self.__outboxPag + 1
+        else:
+            self.__outboxBor = False
         #url = "/nv02/boceto_enviados.php?paginae=%s" % self.__outboxPag
         #url = "/nv02/boceto.php?paginae=%s" % self.__outboxPag
         url = "/v2/boceto.php?paginae=%s" % self.__outboxPag
         #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
         pag = BS(unicode(self.pagina(url), 'latin-1'))
         Outs = self.__getOutbox(pag)
+        lastOutId = int(self.__outbox[-1][3])
+        ret = []
         for o in Outs:
-            self.__outbox.append(o)
-        return Outs
+            if lastOutId > int(o[3]):
+                self.__outbox.append(o)
+                ret.append(o)
+        if len(ret) == 0:
+            ret = self.getMoreOutbox()
+        elif len(ret) < 5:
+            lastRetId = ret[-1][3]
+            for o in self.getMoreOutbox():
+                if lastRetId > int(o[3]):
+                    ret.append(o)
+        return ret
 
     def getMoreFavs(self):
         if self.__conectado != True: return
-        self.__favPag = self.__favPag + 1
+        if self.__favBor == False:
+            self.__favPag = self.__favPag + 1
+        else:
+            self.__favBor = False
         #url = "/nv02/boceto.php?pagina=%s" % self.__favPag
         url = "/v2/boceto.php?pagina=%s" % self.__favPag
         #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
         pag = BS(unicode(self.pagina(url), 'latin-1'))
         Favs = self.__getFavs(pag)
+        lastFavId = int(self.__favbox[-1][3])
+        ret = []
         for f in Favs:
-            self.__favbox.append(f)
-        return Favs
+            if lastFavId > int(f[3]):
+                self.__favbox.append(f)
+                ret.append(f)
+        if len(ret) == 0:
+            ret = self.getMoreFavs()
+        elif len(ret) < 5:
+            lastRetId = ret[-1][3]
+            for f in self.getMoreFavs():
+                if lastRetId > int(f[3]):
+                    ret.append(f)
+        return ret
             
     def __getInbox(self, BShtml):
         lis = BShtml.findAll('li')
@@ -384,6 +379,30 @@ class okeyko:
         if self.__outbox == False: return
         return [list(a) for a in self.__outbox]
 
+    def outboxNew(self):
+        '''Devuelve si hay, mensajes enviados nuevos'''
+        if self.__conectado != True: return
+        if self.__envio == False:
+            return False
+        else:
+            self.__envio = False
+        url = "/v2/boceto.php"
+        pag = BS(unicode(self.pagina(url), 'latin-1'))
+        Outs = self.__getOutbox(pag)
+        firstOutId = int(self.__outbox[0][3])
+        ret = []
+        for o in Outs:
+            if firstOutId < int(o[3]):
+                ret.append(o)
+        if len(ret) != 0:
+            ret.reverse()
+            for r in ret:
+                self.__outbox.insert(0, r)
+            ret.reverse()
+            return ret
+        else:
+            return False        
+
     def favbox(self):
         ''' Devuelve los mensajes de favoritos en una lista
         Formato: [de, hora, mensaje, Oik, avatar, leido, fav] devuelve false si no hay ninguno'''
@@ -422,6 +441,7 @@ class okeyko:
         url = '/v2/fav-no.php?%s' % favId
         self.pagina(url)
         removeListInList(self.__favbox, favId)
+        self.__favBor = True
         return
 
     def enviar_mensaje(self, para, men):
@@ -448,6 +468,7 @@ class okeyko:
             return  False, "Mensaje no salio"
         else:
             print "============ Mensaje enviado con exito =========="
+            self.__envio = True
             return True, "Mensaje enviado exitosamente"
 
     def enviarSms(self,para,men,captcha):
@@ -550,6 +571,7 @@ class okeyko:
         url = "/v2/eliminar_sms_enviados.php"
         self.pagina(url, elimina)
         removeListInList(self.__outbox, menid)
+        self.__outboxBor = True
         return
 
     def getInfo(self, html, template, tdict=False, openf=True):
