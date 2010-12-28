@@ -950,6 +950,7 @@ class mainWindow(gtk.Window):
                     redactar.show_all()
                     anim.destroy()
                 self.__Notification.newNotification(tit)
+                self.__Control['Sound'].enviar()
                 return
     
             redactar.child.set_property('sensitive', False)

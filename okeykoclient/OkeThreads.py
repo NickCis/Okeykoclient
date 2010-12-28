@@ -165,9 +165,7 @@ class actmen(threading.Thread):
                 self.__Cola.put((self.__MainWindow.new_inbox, [mensajes], {}))
                 # TODO: ponerlo en forma que sea multi plataforma (usando modulo os)
                 if self.__Sound != None:
-                    self.__Cola.put((self.__Sound.play_path, \
-                                        (paths.DEFAULT_THEME_PATH + \
-                                        "new.wav",), {}))                               
+                    self.__Cola.put((self.__Sound.recibido, (), {}))
                 #self.__MainWindow.blink()
                 if self.__Notifications != None:
                     self.__Cola.put((self.__Notifications.newNotification, \
@@ -183,6 +181,8 @@ class actmen(threading.Thread):
                 iterDownAvatar(pensamientos, self.__Config.avatarLoad,\
                     self.__Okeyko.avatar, self.__Config.avatarSave)
                 self.__Cola.put((self.__MainWindow.new_pen, [pensamientos], {}))
+                if self.__Sound != None:
+                    self.__Cola.put((self.__Sound.pensamiento, (), {}))
 
 def iterDownAvatar(store, Load, Down, Save):
     if store == None:

@@ -12,9 +12,11 @@ def gtk_main(Control):
 
     def redrawDone(*args):
         Control['ActMen'].thStart()
+        Control['Sound'].update()
         Tray.reBuildMenu()
     
     def redrawDisconnect(*args):
+        Control['Sound'].clearUpdate()
         Control['Okeyko'].disconnect()
         Control['ActMen'].thStop()
         Tray.buildMenu()

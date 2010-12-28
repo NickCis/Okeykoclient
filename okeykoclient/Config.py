@@ -27,6 +27,12 @@ DEFAULT_USER_CONFIG = {
     'menWindowGeometry': '205x150+0+0',
     'themeEmot': 'default',
     'themeSound': 'default',
+    'soundsplayRecibido': True,
+    'soundsplayPensamiento': False,
+    'soundsplayEnviar': False,
+    'soundsmuteSound': False,
+    'enableSounds': True,
+    'soundsbeep': False,
     'themeNot': 'default',
     'notColor': '#000000',
     'notCorner': '1',
@@ -164,35 +170,6 @@ class Main:
                 
         self.userList = UserList(self, self.writeUserList, UserListDict)
     # -- USER LIST -- #
-    # -- USER CONFIG -- #
-    def setCurrentUser(self, user):
-        ''' Create and/or read needed file for user config
-        /!\ This function MUST be called before any set/getUserConfig'''
-
-        #self.currentUser = email.replace('@', '_').replace('.', '_')
-        self.currentUser = user.lower()
-        self.glob['lastLoggedAccount'] = user
-
-
-        if user != '':
-
-            _mkdir('User config dir', paths.CONFIG_DIR, self.currentUser)
-
-            if _mkfile('Config file created: ', paths.CONFIG_DIR, \
-               self.currentUser, 'config'):
-                self.user = ConfigDict(self, self.writeUserConfig, \
-                    DEFAULT_USER_CONFIG)
-                self.writeUserConfig()
-
-            #_mkdir('', paths.CONFIG_DIR, self.currentUser, 'logs')
-            #_mkdir('', paths.CONFIG_DIR, self.currentUser, 'cache')
-            _mkdir('', paths.CONFIG_DIR, self.currentUser, 'avatars')
-            #_mkdir('', paths.CONFIG_DIR, self.currentUser, 'custom_emoticons')
-            self.readUserConfig()
-
-        else:
-            self.user = {}
-
     # -- USER CONFIG -- #
     def setCurrentUser(self, user):
         ''' Create and/or read needed file for user config

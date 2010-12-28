@@ -16,7 +16,7 @@ def main():
     Okeyko = libokeyko.okeyko()
     Conf = Config.Main()
     Conf.writeGlobalConfig()
-    Sonido = Sound.Sound(Conf)
+    Sonido = Sound.SoundHandler(Conf)
     Control = { 'queueToGui' : queueToGui, 'queueToServer' : queueToServer, \
                 'Okeyko' : Okeyko, 'Config' : Conf, 'Sound' : Sonido, \
                 'queueManager' : queueManager}

@@ -35,10 +35,10 @@ except:
 class Sound:
     '''A plugin to play sounds using the available modules on the system'''
 
-    def __init__(self, theme):
+    def __init__(self, config):
         '''class constructor'''
     
-        self.theme = theme
+        self.config = config
         self.beep = False
         self.command = ''
         self.canPlay = False
@@ -77,19 +77,19 @@ class Sound:
             self.canPlay = True
             self.command = 'play'
         
-    def play(self, sound_theme,  sound):
+    def play(self, sound):
         if self.beep and not self.isMac:
             gtk.gdk.beep()
             return
         
-        for theme in (sound_theme, 'default'):
-            soundPath = os.path.join(paths.SOUNDS_PATH, sound_theme,
-                sound + ".wav")
-            if os.path.exists(soundPath):
-                break
-            else:
-                soundPath = ''
-
+        #for theme in (sound_theme, 'default'):
+        #    soundPath = os.path.join(paths.SOUNDS_PATH, sound_theme,
+        #        sound + ".wav")
+        #    if os.path.exists(soundPath):
+        #        break
+        #    else:
+        #        soundPath = ''
+        soundPath = self.config.pathFile(sound)
         if not soundPath:
             return
 
@@ -127,141 +127,63 @@ class Sound:
                 return True
 
 class SoundHandler:
-    def __init__(self, controller, msn, action=None):
+    def __init__(self, config, action=None):
         '''Contructor'''
-        self.theme = controller.theme
-        self.sound = Sound(self.theme)
-        self.controller = controller
-        self.config = self.controller.config
-        self.msn = msn
-        self.muteSound = self.config.user['soundsmuteSound']
-        self.checkBox = gtk.CheckMenuItem(_('Mute Sounds'))
-        self.checkBox.set_active(self.muteSound)
-        if action == 'start':
-            self.onlineId = None
-            self.offlineId = None
-            self.messageId = None
-            self.nudgeId = None
-            self.transferId = None
-            self.sendMessageId = None
-            self.connectpbId = None
-            self.senderrorId = None
-            self.exceptionId = None
-            self.errorId = None
-            self.check()
-            self.checkBox.connect('activate', self.on_muteSounds_activate)
-            self.updateTrayIconMenuList()
-            self.update()
-            self.start()
-            
+        self.config = config
+        self.sound = Sound(self.config)
+        self.check()
+        self.clearUpdate()
+
+    def clearUpdate(self):
+        self.playRecibido = False
+        self.playPensamiento = False
+        self.playEnviar = False
+        self.muteSound = False
+        self.sound.beep = False
+
     def update(self):
-        self.playOnline = self.config.user['soundsplayOnline']
-        self.playOffline = self.config.user['soundsplayOffline']
+        self.playRecibido = self.config.user['soundsplayRecibido']
+        self.playPensamiento = self.config.user['soundsplayPensamiento']
+        self.playEnviar = self.config.user['soundsplayEnviar']
         self.muteSound = self.config.user['soundsmuteSound']
-        self.checkBox.set_active(self.muteSound)
-        self.playMessage = self.config.user['soundsplayMessage']
-        self.playNudge = self.config.user['soundsplayNudge']
-        self.playTransfer = self.config.user['soundsplayTransfer']
-        self.playInactive = self.config.user['soundsplayInactive']
-        self.playSend = self.config.user['soundsplaySend']
-        self.playError = self.config.user['soundsplayError']
-        self.disableBusy = self.config.user['soundsdisableBusy']
-        
-        self.sound_theme = self.config.user['soundstheme']
+        #self.playOnline = self.config.user['soundsplayOnline']
+        #self.playOffline = self.config.user['soundsplayOffline']
+        #self.muteSound = self.config.user['soundsmuteSound']
+        #self.checkBox.set_active(self.muteSound)
+        #self.playMessage = self.config.user['soundsplayMessage']
+        #self.playNudge = self.config.user['soundsplayNudge']
+        #self.playTransfer = self.config.user['soundsplayTransfer']
+        #self.playInactive = self.config.user['soundsplayInactive']
+        #self.playSend = self.config.user['soundsplaySend']
+        #self.playError = self.config.user['soundsplayError']
+        #self.disableBusy = self.config.user['soundsdisableBusy']
+
         self.sound.beep = self.config.user['soundsbeep']
         
-    def on_muteSounds_activate(self, *args):
-        self.muteSound = self.checkBox.get_active()
-        self.config.user['soundsmuteSound'] = (self.muteSound)
-
-    def connect_onoff(self, *args):
-        self.onlineId = self.msn.connect('user-online', self.online)
-        self.offlineId = self.msn.connect('user-offline', self.offline)
-        if self.notifyId is not None: self.msn.disconnect(self.notifyId)
-        self.notifyId = None
-    
-    def start(self):
-        self.notifyId = None
-        self.onlineId = None
-        self.offlineId = None
-        if self.msn.canNotify:
-            self.connect_onoff()
-        else:
-            self.notifyId = self.msn.connect('enable-notifications', self.connect_onoff)
-        self.messageId = self.msn.connect('message-received', self.message)
-        self.nudgeId = self.msn.connect('nudge-received', self.nudge)
-        self.transferId = self.msn.connect('new-file-transfer', self.transfer)
-        self.sendMessageId = self.controller.conversationManager.connect(
-            'send-message', self.send)
-        self.connectpbId = self.msn.connect('connection-problem', self.alert)    
-        self.senderrorId = self.msn.connect('send-message-error', self.alert)
-        self.exceptionId = self.msn.connect('exception', self.alert)
-        self.errorId = self.msn.connect('error', self.alert)
-        
-    def stop(self):
-        if self.onlineId is not None: self.msn.disconnect(self.onlineId)
-        if self.offlineId is not None: self.msn.disconnect(self.offlineId)
-        if self.notifyId is not None: self.msn.disconnect(self.notifyId)
-        self.msn.disconnect(self.messageId)
-        self.msn.disconnect(self.nudgeId)
-        self.msn.disconnect(self.transferId)
-        self.controller.conversationManager.disconnect(self.sendMessageId)
-        self.msn.disconnect(self.connectpbId)
-        self.msn.disconnect(self.senderrorId)
-        self.msn.disconnect(self.exceptionId)
-        self.msn.disconnect(self.errorId)
-        if not TrayIcon.disabled:
-            self.controller.trayIcon.menu.remove(self.checkBox);
-            self.controller.trayIcon.menu.show_all()
-            self.controller.trayIcon.update(self.controller.msn.status)
+    def on_muteSounds_activate(self, truefalse):
+        self.muteSound = truefalse
+        if type(self.muteSound) == bool:
+            self.config.user['soundsmuteSound'] = (self.muteSound)
     
     def check(self):
         if not self.sound.canPlay:
             return (False, _('gstreamer, NSSound, play and aplay not found.'))
         return (True, 'Ok')
 
-    def online(self, msnp, email, oldStatus):
-        if oldStatus == 'FLN' and self.playOnline and self.soundsEnabled():
-            self.sound.play(self.sound_theme, 'online')
+    def recibido(self):
+        if self.playRecibido and self.soundsEnabled():
+            self.sound.play('Sound-recibido.wav')
 
-    def offline(self, msnp, email, oldStatus):
-        if oldStatus == 'FLN' and not self.config.user['notifyInvisible']:
-            return
-        if self.playOffline and self.soundsEnabled():
-            self.sound.play(self.sound_theme, 'offline')
+    def pensamiento(self):
+        if self.playPensamiento and self.soundsEnabled():
+            self.sound.play('Sound-pensamiento.wav')
 
-    def message(self, msnp, email):
-        if self.playMessage and self.soundsEnabled():
-            result = self.controller.conversationManager\
-                .getOpenConversation(email)
-            if self.playInactive and result != None:
-                window, conversation = result
-                windowFocus = window.is_active()
-                tabFocus = (window.conversation == conversation)
-                if not (windowFocus and tabFocus):
-                    self.sound.play(self.sound_theme, 'type')
-            else:
-                self.sound.play(self.sound_theme, 'type')
-
-    def nudge(self, *args):
-        if self.playNudge and self.soundsEnabled():
-            self.sound.play(self.sound_theme, 'nudge')
-
-    def transfer(self, *args):
-        if self.playTransfer and self.soundsEnabled():
-            self.sound.play(self.sound_theme, 'nudge')
-    
-    def send(self, *args):
-        if self.playSend and self.soundsEnabled():
-            self.sound.play(self.sound_theme, 'send')
-            
-    def alert(self, *args):
-        if self.playError and self.soundsEnabled():
-            self.sound.play(self.sound_theme, 'alert')
+    def enviar(self):
+        if self.playEnviar and self.soundsEnabled():
+            self.sound.play('Sound-enviar.wav')
             
     def soundsEnabled(self):
-        if (self.disableBusy and self.msn.status == 'BSY') or \
-           self.muteSound or not self.config.user['enableSounds']:
+        if self.muteSound or not self.config.user['enableSounds']:
             return False
         else:
             return True
