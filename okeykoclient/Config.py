@@ -172,7 +172,7 @@ class Main:
     def writeGlobalConfig(self):
         '''write the config to the file, overwrite current config file'''
         try:
-            confPath.join(paths.CONFIG_DIR, 'config')
+            confPath = os.path.join(paths.CONFIG_DIR, 'config')
             conf = open(confPath, 'w')
 
             for k, v in self.glob:
