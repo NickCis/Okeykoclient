@@ -95,6 +95,14 @@ class Sound:
 
         self.play_path(soundPath)
 
+    def play_theme(self, soundTheme, soundFile):
+        if self.beep and not self.isMac:
+            gtk.gdk.beep()
+            return
+        soundPath = self.config.themePathFile(soundTheme, soundFile)
+        if soundPath != False:
+            self.play_path(soundPath)
+
     def play_path(self, soundPath):
         if os.name == "nt":
             winsound.PlaySound(soundPath, 

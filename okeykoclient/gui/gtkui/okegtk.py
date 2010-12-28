@@ -4,9 +4,11 @@ import pango
 import gobject
 import webbrowser as WB
 
-import MensajeVen
-import TextField
 import About
+import TextField
+import MensajeVen
+import SettingsWindow
+
 
 UI = '''<ui>
     <menubar name="MenuBar">
@@ -21,6 +23,9 @@ UI = '''<ui>
       <menu action="Contactos">
         <menuitem action="AgeAdd"/>
         <menuitem action="Agenda"/>
+      </menu>
+      <menu action="Pref">
+        <menuitem action="Settings"/>
       </menu>
       <menu action="Ayuda">
         <menuitem action="OkePag"/>
@@ -217,6 +222,10 @@ class mainWindow(gtk.Window):
             about = About.AboutOkeyko(self.__Config)
             about.show()
 
+        def SettingsWin(*args):
+            ST = SettingsWindow.SettingsWindow(self.__Control, self)
+            ST.show()
+
         def resize_wrap(scroll, allocation, treeview, column, cell):
             otherColumns = (c for c in treeview.get_columns() if c != column)
             newWidth = allocation.width - sum(c.get_width() for c in otherColumns)
@@ -262,6 +271,9 @@ class mainWindow(gtk.Window):
                                  ('Mensajes', None, '_Mensajes'),
                                  ('Nada', None, '_Proximamente'),
                                  ('Contactos', None, '_Contactos'),
+                                 ('Pref', None, '_Preferencias'),
+                                 ('Settings', gtk.STOCK_PREFERENCES, '_Ajustes', None, 
+                                    'Abrir ventana de ajustes', SettingsWin),
                                  ('AgeAdd', gtk.STOCK_ADD, '_Agregar', None, 
                                     'Agregar a Agenda', ageAddcb),
                                  ('Agenda', gtk.STOCK_DND, '_Agenda', None, 
@@ -1034,6 +1046,7 @@ class mainWindow(gtk.Window):
                 container.pack_start(label)
                 label.show()
             self.__Notification.newNotification(tit)
+            self.__Control['Sound'].enviar()
             return
 
         alert.child.set_property('sensitive', False)

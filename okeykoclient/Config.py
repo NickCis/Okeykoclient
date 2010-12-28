@@ -10,9 +10,54 @@ import imp
 import sys
 import shutil
 import base64
+import shutil
 
 import paths
 
+
+
+THEME_SOUND_FILES = [ 'enviar.wav',
+                      'pensamiento.wav',
+                      'recibido.wav' ]
+
+THEME_NOT_FILES = [ 'bor.png',
+                    'guif.png' ]
+
+THEME_THEME_FILES = [ 'ag.png',
+                      'bor.png',
+                      'fav.png',
+                      'foky.png',
+                      'leido_cel.png',
+                      'leido_pc.png',
+                      'loading.gif',
+                      'logo.png',
+                      'logo_chik.png',
+                      'new.png',
+                      'resp.png' ]
+
+THEME_EMOT_FILES = [ 'emot-nerd.png',
+                     'emot-angel.png',
+                     'emot-banana.png',
+                     'emot-burger.png',
+                     'emot-callate.png',
+                     'emot-colorado.png',
+                     'emot-corazon.gif',
+                     'emot-diablo.png',
+                     'emot-enfadado.png',
+                     'emot-enojado.png',
+                     'emot-feliz.png',
+                     'emot-jeje.png',
+                     'emot-llora.png',
+                     'emot-loco.png',
+                     'emot-mmm.png',
+                     'emot-ninja.png',
+                     'emot-ok.png',
+                     'emot-oo.png',
+                     'emot-playa.png',
+                     'emot-pomada.png',
+                     'emot-puag.png',
+                     'emot-torta.png',
+                     'emot-triste.png' ]
 
 DEFAULT_GLOBAL_CONFIG = {
     'mainWindowGeometry': '205x550+0+0',
@@ -49,6 +94,12 @@ class Main:
     ''' Manages everything related to configuration and themes'''
     def __init__(self):
         '''Constructor : this will create needed files for global configuration'''
+        self.THEME_SOUND_FILES = THEME_SOUND_FILES
+        self.THEME_NOT_FILES = THEME_NOT_FILES
+        self.THEME_THEME_FILES = THEME_THEME_FILES
+        self.THEME_EMOT_FILES = THEME_EMOT_FILES
+        
+        self.themePathFile = themePathFile
         
         self.currentUser = ''
         self.glob = {}
@@ -84,6 +135,8 @@ class Main:
             self.writeUserList()
 
         self.readUserList()
+
+        self.__getAllThemes()
 
     def readGlobalConfig(self):
         '''read the config file and create a dictionarie with key and value
@@ -169,7 +222,7 @@ class Main:
                 conf.close()
                 
         self.userList = UserList(self, self.writeUserList, UserListDict)
-    # -- USER LIST -- #
+
     # -- USER CONFIG -- #
     def setCurrentUser(self, user):
         ''' Create and/or read needed file for user config
@@ -209,7 +262,8 @@ class Main:
         userConfigDict = DEFAULT_USER_CONFIG.copy()
         conf = None
         try:
-            conf = open(paths.CONFIG_DIR + '/' + self.currentUser + '/config', 'r')
+            userConfigPath = os.path.join(paths.CONFIG_DIR, self.currentUser, 'config')
+            conf = open(userConfigPath, 'r')
             string = conf.read()
 
             for i in string.splitlines():
@@ -238,7 +292,8 @@ class Main:
         '''write the config to the file, overwrite current config file'''
 
         try:
-            conf = open(paths.CONFIG_DIR + '/' + self.currentUser + '/config', 'w')
+            userConfigPath = os.path.join(paths.CONFIG_DIR, self.currentUser, 'config')
+            conf = open(userConfigPath, 'w')
 
             for k, v in self.user:
                 if type(v) == bool:
@@ -252,7 +307,56 @@ class Main:
             #emesenelib.common.debug(e)
             print "exception writint config:"
             print e
-            
+    # -- Theme Listing --#
+    def __getAllThemes(self):
+        self.themesTheme = ['default']
+        self.themesSound = ['default']
+        self.themesNot = ['default']
+        self.themesEmot = ['default']
+
+        themesHome = {}
+        for th in os.listdir(paths.THEME_HOME_PATH):
+            themesHome.update({th: os.path.join(paths.THEME_HOME_PATH, th) })
+        themesSystem = {}
+        for th in os.listdir(paths.THEME_SYSTEM_WIDE_PATH):
+            themesSystem.update({th: os.path.join(paths.THEME_SYSTEM_WIDE_PATH, th) })
+
+        self.themes = themesSystem.copy()
+        self.themes.update(themesHome)
+
+        # Make list for loop
+        looplist = [ (self.themesTheme, THEME_THEME_FILES),
+                     (self.themesSound, THEME_SOUND_FILES),
+                     (self.themesNot, THEME_NOT_FILES),
+                     (self.themesEmot, THEME_EMOT_FILES) ]
+
+        for th, thpath in self.themes.items():
+            if th != 'default':
+                for themeType, themeFiles in looplist:
+                    if not th in themeType:
+                        for f in themeFiles:
+                            if not f in os.listdir(thpath):
+                                break
+                        else:
+                            themeType.append(th)
+                            #Try with SystemWide folder
+                            if not th in themeType and thpath != themeSystem['th']:
+                                for f in themeFiles:
+                                    if not f in os.listdir(themeSystem['th']):
+                                        break
+                                else:
+                                    themeType.append(th)
+    # -- Theme Install --#
+    def installTheme(self, themeName, filePath):
+        themeName = themeName.lower()
+        try:
+            theme_path = os.path.join(THEME_SYSTEM_WIDE_PATH, themeName)
+            shutil.copytree(filePath,theme_path)
+        except:
+            theme_path = os.path.join(THEME_HOME_PATH, themeName)
+            shutil.copytree(filePath,theme_path)
+        return themeName
+
     # -- Theme Return -- #
     def pathFile(self, arc):
         sep = arc.find("-")
