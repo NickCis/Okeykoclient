@@ -145,7 +145,8 @@ class Main:
         globalConfigDict = DEFAULT_GLOBAL_CONFIG.copy()
         conf = None
         try:
-            conf = open(paths.CONFIG_DIR + '/config', 'r')
+            confPath = os.path.join(paths.CONFIG_DIR, 'config')
+            conf = open(confPath, 'r')
             string = conf.read()
 
             for i in string.splitlines():
@@ -171,7 +172,8 @@ class Main:
     def writeGlobalConfig(self):
         '''write the config to the file, overwrite current config file'''
         try:
-            conf = open(paths.CONFIG_DIR + '/config', 'w')
+            confPath.join(paths.CONFIG_DIR, 'config')
+            conf = open(confPath, 'w')
 
             for k, v in self.glob:
                 if type(v) == bool:
@@ -186,7 +188,8 @@ class Main:
     def writeUserList(self):
         '''write the UserList to the file, overwrite current config file'''
         try:
-            conf = open(paths.CONFIG_DIR + '/users.dat', 'w')
+            confPath = os.path.join(paths.CONFIG_DIR, 'users.dat')
+            conf = open(confPath, 'w')
             for k, v in self.userList:
                 if type(v) == bool:
                     conf.write(k + ':' + '\n')
@@ -204,7 +207,8 @@ class Main:
         UserListDict = {}
         conf = None
         try:
-            conf = open(paths.CONFIG_DIR + '/users.dat', 'r')
+            confPath = os.path.join(paths.CONFIG_DIR, 'users.dat')
+            conf = open(confPath, 'r')
             string = conf.read()
 
             for i in string.splitlines():

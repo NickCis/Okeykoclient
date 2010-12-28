@@ -309,8 +309,8 @@ class mainWindow(gtk.Window):
         userNick, userAvatar, userEstado = self.__Okeyko.userinfo()
         uAvatar =  gtk.gdk.PixbufLoader()
         uAvatar.write(userAvatar)
-        userAvatar = uAvatar.get_pixbuf()
         uAvatar.close()
+        userAvatar = uAvatar.get_pixbuf()
         userIm = gtk.Image()
         userIm.set_from_pixbuf(userAvatar)
         userHbox.pack_start(userIm, False, False)
@@ -957,8 +957,8 @@ class mainWindow(gtk.Window):
                     redactar.vbox.pack_start(gtk.Label(error))
                     uCaptcha =  gtk.gdk.PixbufLoader()
                     uCaptcha.write(self.__Okeyko.captcha())
-                    Captcha.set_from_pixbuf(uCaptcha.get_pixbuf())
                     uCaptcha.close()
+                    Captcha.set_from_pixbuf(uCaptcha.get_pixbuf())
                     redactar.show_all()
                     anim.destroy()
                 self.__Notification.newNotification(tit)
@@ -1018,8 +1018,8 @@ class mainWindow(gtk.Window):
         redactar.vbox.pack_start(numlabel)
         uCaptcha =  gtk.gdk.PixbufLoader()
         uCaptcha.write(self.__Okeyko.captcha())
-        Captcha = gtk.image_new_from_pixbuf(uCaptcha.get_pixbuf())
         uCaptcha.close()
+        Captcha = gtk.image_new_from_pixbuf(uCaptcha.get_pixbuf())
         redactar.vbox.pack_start(Captcha)
         codigo = gtk.Entry()
         redactar.vbox.pack_start(codigo)
@@ -1072,9 +1072,9 @@ class mainWindow(gtk.Window):
     def agendaAdd(self, nom=None, desc=None):
         '''Alert para agregar a la agenda'''
 
-        def CBagendaAdd(*args, **kargs):
-            def post(*args, **kawrgs):
-                if args[0]:
+        def CBagendaAdd(agenda, entry1, entry2, button):
+            def post(arg, agenda, button):
+                if arg:
                     agenda.destroy()
                     n("Agregado correctamente")
                 else:
@@ -1082,7 +1082,7 @@ class mainWindow(gtk.Window):
                     labErrorPost = gtk.Label('Error')
                     agenda.vbox.pack_end(labErrorPost)
                     agenda.child.set_property('sensitive', True)
-            agenda.child.set_property('sensitive', False)            
+            agenda.child.set_property('sensitive', False)
             PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
             anim = gtk.Image()
             anim.set_from_animation(PBanim)
@@ -1091,8 +1091,9 @@ class mainWindow(gtk.Window):
             n = self.__Notification.newNotification
             u = entry1.get_text()
             d = entry2.get_text()
+            lambdapost = lambda x: post( x, agenda, button) #FIXME
             self.__queueToServer.put((self.__Okeyko.agendaAdd, (u, d), {},
-                                      post, (), {}))
+                                      lambdapost, (), {}))
         agenda = gtk.Dialog("Agenda", self)
         Hbox1 = gtk.HBox()
         label1 = gtk.Label("Usuario")
@@ -1109,9 +1110,8 @@ class mainWindow(gtk.Window):
         Hbox2.pack_start(label2)
         Hbox2.pack_start(entry2)
         button = gtk.Button('Agregar')
-        #button.connect('clicked', self.__agendaAdd, u=entry1.get_text(),
-        #                                            d=entry2.get_text())
-        button.connect('clicked', CBagendaAdd)
+        lambdaCB = lambda x: CBagendaAdd(agenda, entry1, entry2, button) 
+        button.connect('clicked', lambdaCB)
         agenda.vbox.pack_start(Hbox1)
         agenda.vbox.pack_start(Hbox2)
         agenda.vbox.pack_start(button)
