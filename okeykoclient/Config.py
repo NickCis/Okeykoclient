@@ -85,7 +85,11 @@ DEFAULT_USER_CONFIG = {
     'notScroll': '1',
     'notOffset': '1',
     'notHeight': 128,
-    'notWidth': 200
+    'notWidth': 200,
+    'tabR': True,
+    'tabE': True,
+    'tabF': True,
+    'tabP': True
 }
 
 

@@ -12,8 +12,9 @@ def gtk_main(Control):
 
     def redrawDone(*args):
         Control['ActMen'].thStart()
-        Control['Config'].setCurrentUser(Control['Okeyko'].getUser())
-        Control['Config'].readUserConfig()
+        # moved to okegtk.
+        #Control['Config'].setCurrentUser(Control['Okeyko'].getUser())
+        #Control['Config'].readUserConfig()
         Control['Sound'].update()
         Tray.reBuildMenu()
     
