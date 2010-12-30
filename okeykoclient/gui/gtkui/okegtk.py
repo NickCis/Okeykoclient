@@ -5,9 +5,9 @@ import gobject
 import webbrowser as WB
 
 import About
+import Notebook
 import TextField
 import MensajeVen
-import NotebookLabel
 import SettingsWindow
 
 
@@ -236,8 +236,9 @@ class mainWindow(gtk.Window):
         def showHideTabCB(toggleAct, *args):
             name = toggleAct.get_name()
             if name in ('tabR','tabE','tabF','tabP'):
+            #if self.tabsys.dictOverr.has_key(name):
                 self.__Config.user[name] = toggleAct.get_property('active')
-            self.showHideTab(name=name, toggleAction=True)
+            self.tabsys.showHideTab(name=name, toggleAction=True)
 
         def resize_wrap(scroll, allocation, treeview, column, cell):
             otherColumns = (c for c in treeview.get_columns() if c != column)
@@ -276,7 +277,6 @@ class mainWindow(gtk.Window):
         self.add_accel_group(accelgroup)         # to the toplevel win
         
         actiongroup = gtk.ActionGroup('UIManagerMenuTool') # Create Action Group
-        self.redrawActionGroup = actiongroup
         
         #create actions        
         # (Name, StockItem, Label, accelerator, ToolTip, CallBack)
@@ -362,63 +362,60 @@ class mainWindow(gtk.Window):
         userEstE.connect("text-changed", self.estadoSet, userEstE._get_text )
         userInVbox.pack_start(userEstE, True, True)
 
-        #hboxmenu = gtk.HBox(False, 0)
-        ##vbox.add(hboxmenu)
-        #vbox.pack_start(hboxmenu, False, False)
-        #butredac = gtk.Button("Redactar")
-        #hboxmenu.pack_start(butredac, True, True)
-        #butredac.connect("clicked", self.redactar_ventana)
-        #butagen = gtk.Button("Agenda")
-        #hboxmenu.pack_start(butagen, True, True)
-        #butagen.connect("clicked", self.agenda_ventana)
-        #butsalir = gtk.Button("Salir")
-        #hboxmenu.pack_start(butsalir, True, True)
-        #butsalir.connect("clicked", self.close_application)
-
         # Crea sistema de tabs
-        tabsys = gtk.Notebook()
-        tabsys.set_property('scrollable', True)
-        self.tabsys = tabsys
-        tabsys.set_tab_pos(gtk.POS_TOP)
-        tabsys.set_size_request(300,-1)
-        vbox.pack_start(tabsys, True, True)
+        #tabsys = gtk.Notebook()
+        #tabsys.set_property('scrollable', True)
+        #self.tabsys = tabsys
+        #tabsys.set_tab_pos(gtk.POS_TOP)
+        #tabsys.set_size_request(300,-1)
+        #vbox.pack_start(tabsys, True, True)
 
         #Anade tabs
-        def closetab(*args):
-            print args
-        tab1name = NotebookLabel.NotebookLabel("Recibidos", gtk.STOCK_CLOSE)
-        tab1name.connect('img-clicked', lambda *x: self.showHideTab(name='tabR'))
-        tab1name.connect('middle-click', lambda *x: self.showHideTab(name='tabR'))
-        tab2name = NotebookLabel.NotebookLabel("Enviados", gtk.STOCK_CLOSE)
-        tab2name.connect('img-clicked', lambda *x: self.showHideTab(name='tabE'))
-        tab2name.connect('middle-click', lambda *x: self.showHideTab(name='tabE'))
-        tab3name = NotebookLabel.NotebookLabel("Favoritos", gtk.STOCK_CLOSE)
-        tab3name.connect('img-clicked', lambda *x: self.showHideTab(name= 'tabF'))
-        tab3name.connect('middle-click', lambda *x: self.showHideTab(name= 'tabF'))
-        tab4name = NotebookLabel.NotebookLabel("Pensamientos", gtk.STOCK_CLOSE)
-        tab4name.connect('img-clicked', lambda *x: self.showHideTab(name='tabP'))
-        tab4name.connect('middle-click', lambda *x: self.showHideTab(name='tabP'))
+        
+        self.tabsys = Notebook.Notebook(actiongroup)
+        vbox.pack_start(self.tabsys, True, True)
+        #tab1name = NotebookLabel.NotebookLabel("Recibidos", gtk.STOCK_CLOSE)
+        #tab1name.connect('img-clicked', lambda *x: self.showHideTab(name='tabR'))
+        #tab1name.connect('middle-click', lambda *x: self.showHideTab(name='tabR'))
+        #tab2name = NotebookLabel.NotebookLabel("Enviados", gtk.STOCK_CLOSE)
+        #tab2name.connect('img-clicked', lambda *x: self.showHideTab(name='tabE'))
+        #tab2name.connect('middle-click', lambda *x: self.showHideTab(name='tabE'))
+        #tab3name = NotebookLabel.NotebookLabel("Favoritos", gtk.STOCK_CLOSE)
+        #tab3name.connect('img-clicked', lambda *x: self.showHideTab(name= 'tabF'))
+        #tab3name.connect('middle-click', lambda *x: self.showHideTab(name= 'tabF'))
+        #tab4name = NotebookLabel.NotebookLabel("Pensamientos", gtk.STOCK_CLOSE)
+        #tab4name.connect('img-clicked', lambda *x: self.showHideTab(name='tabP'))
+        #tab4name.connect('middle-click', lambda *x: self.showHideTab(name='tabP'))
 
         frame1 = gtk.Frame()
         frame2 = gtk.Frame()
         frame3 = gtk.Frame()
         frame4 = gtk.Frame()
         
-        self.dictTabs = { 'tabR': (tab1name, frame1), 
-                         'tabE': (tab2name, frame2), 
-                         'tabF': (tab3name, frame3), 
-                         'tabP': (tab4name, frame4) }
+        #self.dictTabs = { 'tabR': (tab1name, frame1), 
+        #                 'tabE': (tab2name, frame2), 
+        #                 'tabF': (tab3name, frame3), 
+        #                 'tabP': (tab4name, frame4) }
 
         #tabsys.append_page(frame1, gtk.Label(tab1name))
         #tabsys.append_page(frame1, tab1namehbox)
-        if showtabR:
-            tabsys.append_page(frame1, tab1name)
-        if showtabE:
-            tabsys.append_page(frame2, tab2name)
-        if showtabF:
-            tabsys.append_page(frame3, tab3name)
-        if showtabP:
-            tabsys.append_page(frame4, tab4name)
+        self.tabsys.append_page(frame1, ("Recibidos", 'tabR'), (
+                  ('img-clicked', lambda *x: self.tabsys.showHideTab(name='tabR')),
+                  ('middle-click', lambda *x: self.tabsys.showHideTab(name='tabR')) ),
+                   showtabR )
+        self.tabsys.append_page(frame2, ("Enviados", 'tabE'), (
+                ('img-clicked', lambda *x: self.tabsys.showHideTab(name='tabE')),
+                ('middle-click', lambda *x: self.tabsys.showHideTab(name='tabE')) ),
+                showtabE )
+        self.tabsys.append_page(frame3, ("Favoritos", 'tabF'), (
+                ('img-clicked', lambda *x: self.tabsys.showHideTab(name= 'tabF')),
+                ('middle-click', lambda *x: self.tabsys.showHideTab(name= 'tabF')) ),
+                showtabF )
+        self.tabsys.append_page(frame4, ("Pensamientos", 'tabP'), (
+                ('img-clicked', lambda *x: self.tabsys.showHideTab(name='tabP')),
+                ('middle-click', lambda *x: self.tabsys.showHideTab(name='tabP')) ),
+                showtabP )
+
 
         sw = gtk.ScrolledWindow()
         #sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
@@ -745,63 +742,7 @@ class mainWindow(gtk.Window):
             if str(row[5]) == str(Oid):
                 self.inbox_store.remove(row.iter)
                 break
-        self.__Okeyko.inbox_bor(Oid)
-
-    def showHideTab(self, name=None, page_num=None, toggleAction=False):
-        def showHideTab(name=None, page_num=None):
-            if name != None:
-                if name == 'tabR' or name == 'tabE' or name == 'tabF' or name == 'tabP':
-                    nameinlab = self.dictTabs[name][0].get_text()
-                else:
-                    nameinlab = name
-                for npage in range(0, self.tabsys.get_n_pages()):
-                    page = self.tabsys.get_nth_page(npage)
-                    pagelabel = self.tabsys.get_tab_label(page)
-                    if pagelabel.get_text() == nameinlab:
-                        self.dictTabs.update({ name: (pagelabel, page)  })
-                        self.tabsys.remove_page(npage)
-                        break
-                else:
-                    if self.dictTabs.has_key(name):
-                        tablabel, tabchild = self.dictTabs[name]
-                        self.tabsys.insert_page(tabchild, tablabel)
-                    else:
-                        print "Exepction while showing tabs, no existe tab %s" % name
-                        return
-                
-            elif page_num != None and page_num <= self.tabsys.get_n_pages():
-                page = self.tabsys.get_nth_page(page_num)
-                pagelabel = self.tabsys.get_tab_label(page)
-                pagelabelname = pagelabel.get_text()
-                for a in ('tabR', 'tabE', 'tabF', 'tabP'):
-                    if pagelabelname == self.dictTabs[a][0].get_text():
-                        nameput = a
-                        break
-                else:
-                    nameput = pagelabelname
-                self.dictTabs.update({ nameput: (pagelabel, page)  })
-                self.tabsys.remove_page(page_num)
-            else:
-                print 'Exception in showHideTab No name of page_num set'
-        if toggleAction:
-            showHideTab(name=name, page_num=page_num)
-        else:
-            if name == None:
-                page = self.tabsys.get_nth_page(page_num)
-                pagelabel = self.tabsys.get_tab_label(page)
-                pagelabelname = pagelabel.get_text()
-                for a in ('tabR', 'tabE', 'tabF', 'tabP'):
-                    if pagelabelname == self.dictTabs[a][0].get_text():
-                        nameput = a
-                        break
-                else:
-                    nameput = pagelabelname
-            act = self.redrawActionGroup.get_action(name)
-            if act != None:
-                active = False if (act.get_active()) else True
-                act.set_active(active)
-            else:
-                showHideTab(name=name, page_num=page_num)
+        self.__Okeyko.inbox_bor(Oid)    
 
     def getMoreInbox(self, button):    
         def getMoreInboxPost(mensajes):
