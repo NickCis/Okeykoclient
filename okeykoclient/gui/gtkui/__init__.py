@@ -11,7 +11,8 @@ import TrayIcon
 def gtk_main(Control):
 
     def redrawDone(*args):
-        Control['ActMen'].thStart()
+        #Control['ActMen'].thStart()
+        Control['ThreadHandler'].startActMen()
         # moved to okegtk.
         #Control['Config'].setCurrentUser(Control['Okeyko'].getUser())
         #Control['Config'].readUserConfig()
@@ -21,7 +22,8 @@ def gtk_main(Control):
     def redrawDisconnect(*args):
         Control['Sound'].clearUpdate()
         Control['Okeyko'].disconnect()
-        Control['ActMen'].thStop()
+        #Control['ActMen'].thStop()
+        Control['ThreadHandler'].killActMen()
         Tray.buildMenu()
     
     if os.name != 'nt':
@@ -40,7 +42,8 @@ def gtk_main(Control):
     MainWindow = okegtk.mainWindow(Control)
     Control.update({'MainWindow': MainWindow})
     Tray = TrayIcon.TrayIcon(MainWindow)
-    Control['ActMen'].setgui(MainWindow, Notificaciones)
+    #Control['ActMen'].setgui(MainWindow, Notificaciones)
+    Control['ThreadHandler'].setgui(MainWindow, Notificaciones)
     #MainWindow.connect('redraw-done', Control['ActMen'].thStart)
     MainWindow.connect('redraw-done', redrawDone)
     MainWindow.connect('redraw-disconnect', redrawDisconnect)

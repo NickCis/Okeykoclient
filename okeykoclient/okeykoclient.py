@@ -10,18 +10,24 @@ import Sound
 
 
 def main():
-    queueToGui, queueToServer = OkeThreads.queue_maker()
-    threadsServer = OkeThreads.server(queueToServer, queueToGui)
+    #queueToGui, queueToServer = OkeThreads.queue_maker()
+    #threadsServer = OkeThreads.server(queueToServer, queueToGui)
+    ThreadHandler = OkeThreads.ThreadHandler()
     queueManager = OkeThreads.queue_manager
     Okeyko = libokeyko.okeyko()
     Conf = Config.Main()
     Conf.writeGlobalConfig()
     Sonido = Sound.SoundHandler(Conf)
-    Control = { 'queueToGui' : queueToGui, 'queueToServer' : queueToServer, \
-                'Okeyko' : Okeyko, 'Config' : Conf, 'Sound' : Sonido, \
-                'queueManager' : queueManager}
-    ActMen = OkeThreads.actmen(Control)
-    Control.update({'ActMen':ActMen})
+    #Control = { 'queueToGui' : queueToGui, 'queueToServer' : queueToServer, \
+    #            'Okeyko' : Okeyko, 'Config' : Conf, 'Sound' : Sonido, \
+    #            'queueManager' : queueManager}
+    Control = { 'queueToGui' : ThreadHandler.queueToGui,
+                'queueToServer' : ThreadHandler.queueToServer, 
+                'Okeyko' : Okeyko, 'Config' : Conf, 'Sound' : Sonido, 
+                'queueManager' : queueManager, 'ThreadHandler' : ThreadHandler}
+    ThreadHandler.setControl(Control)
+    #ActMen = OkeThreads.actmen(Control)
+    #Control.update({'ActMen':ActMen})
     gtkui.gtk_main(Control)
     #Notificaciones = Notification.MainClass(Conf)
     #MainWindow = okegtk.mainWindow(Okeyko, queueToServer, Notificaciones)
