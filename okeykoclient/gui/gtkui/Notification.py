@@ -567,8 +567,8 @@ class MainClass:
             closePixmap = None, callback = None, params = None,
             userPixbuf = None, font = None, color = None, duration= 7'''
 
-        self.corner = self.Config.user['notCorner']
-        self.scroll = self.Config.user['notScroll']
+        self.corner = int(self.Config.user['notCorner'])
+        self.scroll = int(self.Config.user['notScroll'])
         self.offset = self.Config.user['notOffset']
         self.height = self.Config.user['notHeight']
         self.width = self.Config.user['notWidth']
@@ -581,16 +581,43 @@ class MainClass:
         self.NotiPixmap, NotiPMask = gtk.gdk.pixbuf_new_from_file(NotiPixmapF).render_pixmap_and_mask()
         NotiPixmapCloseF = self.Config.pathFile('Not-close.png')
         self.NotiClosePixmap = gtk.gdk.pixbuf_new_from_file(NotiPixmapCloseF)
-        self.Noti = NotificationManager()        	
+        self.Noti = NotificationManager(128, 200)        	
 
-    def newNotification(self,string,dura=7):
-        self.updateConfig()
-        self.Noti.newNotification(string, self.corner, self.scroll, self.NotiPixmap, self.NotiClosePixmap, color=self.NotiCol, duration=dura)
+    def newNotification(self,string,dura=7):        
+        if self.Config.user['enableNot']:
+            self.Noti.newNotification(string, self.corner, self.scroll, self.NotiPixmap, self.NotiClosePixmap, color=self.NotiCol, duration=dura)
         return
 
     def mensajeNew(self, callback=None, params=None, userPixbuf=None):
-        string = "Nuevo mensaje"
-        self.Noti.newNotification(string, self.corner, self.scroll,\
+        if self.Config.user['notshowRecibido'] and self.Config.user['enableNot']:
+            string = "Nuevo mensaje"
+            self.Noti.newNotification(string, self.corner, self.scroll,\
                                     self.NotiPixmap, self.NotiClosePixmap,\
                                     callback, params, userPixbuf, self.font,\
                                     self.color, 0)
+    def pensamientoNew(self, callback=None, params=None, userPixbuf=None):
+        if self.Config.user['notshowPensamiento'] and self.Config.user['enableNot']:
+            string = "Nuevo Pensamiento"
+            self.Noti.newNotification(string, self.corner, self.scroll,\
+                                    self.NotiPixmap, self.NotiClosePixmap,\
+                                    callback, params, userPixbuf, self.font,\
+                                    self.color, 7)
+    def enviar(self, callback=None, params=None, userPixbuf=None):
+        if self.Config.user['notshowEnviar'] and self.Config.user['enableNot']:
+            string = "Mensaje enviado"
+            self.Noti.newNotification(string, self.corner, self.scroll,\
+                                    self.NotiPixmap, self.NotiClosePixmap,\
+                                    callback, params, userPixbuf, self.font,\
+                                    self.color, 7)
+
+    def preview(self, pos, scroll, font, color, theme):
+        if self.Config.user['enableNot']:
+            string = "Ejemplo de Notificacion en Pantalla"
+            NotiPixmapF = self.Config.themePathFile(theme, 'guif.png')
+            notipx, NotiPMask = gtk.gdk.pixbuf_new_from_file(NotiPixmapF).render_pixmap_and_mask()
+            NotiPixmapCloseF = self.Config.themePathFile(theme, 'close.png')
+            closepx = gtk.gdk.pixbuf_new_from_file(NotiPixmapCloseF)
+            self.Noti.newNotification(string, pos, scroll,\
+                                    notipx, closepx,\
+                                    None, None, None, font,\
+                                    color, 7)

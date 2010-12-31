@@ -1015,7 +1015,8 @@ class mainWindow(gtk.Window):
                     Captcha.set_from_pixbuf(uCaptcha.get_pixbuf())
                     redactar.show_all()
                     anim.destroy()
-                self.__Notification.newNotification(tit)
+                #self.__Notification.newNotification(tit)
+                self.__Notification.enviar()
                 self.__Control['Sound'].enviar()
                 return
     
@@ -1099,7 +1100,7 @@ class mainWindow(gtk.Window):
                 label = gtk.Label(error)
                 container.pack_start(label)
                 label.show()
-            self.__Notification.newNotification(tit)
+            self.__Notification.enviar()
             self.__Control['Sound'].enviar()
             return
 

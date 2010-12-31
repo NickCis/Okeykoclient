@@ -18,6 +18,7 @@ def gtk_main(Control):
         #Control['Config'].setCurrentUser(Control['Okeyko'].getUser())
         #Control['Config'].readUserConfig()
         Control['Sound'].update()
+        Control['Notification'].updateConfig()
         Tray.reBuildMenu()
     
     def redrawDisconnect(*args):

@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
 import gtk
+import pango
 
 LIST = [ 
     {'stock_id' : gtk.STOCK_HOME, 'text' : 'General'},
     {'stock_id' : gtk.STOCK_SELECT_COLOR,'text' : 'Tema'},
+    {'stock_id' : gtk.STOCK_INDEX,'text' : 'Notificaciones'},
     {'stock_id' : gtk.STOCK_MEDIA_NEXT,'text' : 'Sonidos'},
     {'stock_id' : gtk.STOCK_LEAVE_FULLSCREEN,'text' : 'Escritorio'},
 ]
@@ -84,11 +86,12 @@ class SettingsWindow(gtk.Window):
         
         self.pageGeneral = pageGeneral(Control)
         self.pageTema = pageTema(Control)
+        self.pageNot = pageNot(Control)
         self.pageSonido = pageSonido(Control)
         self.pageEscritorio = pageEscritorio(Control)
         
-        self.page_dict = [self.pageGeneral, self.pageTema, self.pageSonido, 
-                          self.pageEscritorio]
+        self.page_dict = [self.pageGeneral, self.pageTema, self.pageNot,
+                          self.pageSonido, self.pageEscritorio]
 
         for p in self.page_dict:
             self.notebook.append_page(p)
@@ -130,6 +133,256 @@ class pageGeneral(gtk.VBox):
 
     def save(self):
         pass
+
+class pageNot(gtk.VBox):
+   ''' This represents the Notification page. '''
+   def __init__(self, Control):
+      gtk.VBox.__init__(self)
+      self.control = Control
+      self.config = self.control['Config']
+      
+      self.notFont = self.config.user['notFont']
+      self.notColor = self.config.user['notColor']
+
+      self.set_spacing(SPACING-3) #to fit the actual height
+      self.set_border_width(10)
+      self.installNewText = 'Instalar nuevo...'
+
+
+      
+      lbTitle = gtk.Label()
+      lbTitle.set_markup('<b>Notificaciones en Pantalla</b>')
+      hbTitleLabel = gtk.HBox()
+      hbTitleLabel.pack_start(lbTitle, False, True, padding=5)
+      self.pack_start(hbTitleLabel, False, False, padding=5)
+      
+      self.enablenot = gtk.CheckButton('_Activar Notificaciones en Pantalla')
+      self.enablenot.set_active(self.config.user['enableNot'])
+      self.enablenot.connect('toggled', self.notToggled) #TODO
+      
+      themes = list(self.config.themesNot)
+
+      self.theme = gtk.combo_box_new_text()
+      labelTheme = gtk.Label('Tema:')
+      labelTheme.set_alignment(0.0, 0.5)
+      labelTheme.set_use_underline(True)
+      self.values2 = {}
+      count=0
+      self.notDefaultIndex = None
+      for name in themes:
+          self.theme.append_text(name)
+          self.values2[name]=int(count)
+          if name == 'default':
+              self.notDefaultIndex = count
+          count += 1
+      self.theme.append_text(self.installNewText)
+      if self.config.user['themeNot'] in themes:
+          self.theme.set_active(self.values2[self.config.user['themeNot']])
+      else:
+          self.theme.set_active(0)
+      self.theme.connect("changed", self.savetheme)
+      
+      vboxlabel = gtk.VBox(homogeneous=False, spacing=5)
+      vboxlabel.pack_start(labelTheme, True, True)
+      
+      vboxentry = gtk.VBox(homogeneous=False, spacing=5)
+      vboxentry.pack_start(self.theme, True, True)
+
+      self.previewButton = gtk.Button()
+      self.previewButton.set_image(gtk.image_new_from_stock(gtk.STOCK_MEDIA_PLAY,gtk.ICON_SIZE_SMALL_TOOLBAR))
+      self.previewButton.connect('clicked', self.showPreview)      
+      self.previewButton.set_tooltip_text("Vista Previa de tema de Notificacion en Pantalla entrante seleccionado.")
+      
+      hbox = gtk.HBox(homogeneous=False, spacing=SPACING)
+      hbox.pack_start(vboxlabel, False, True)
+      hbox.pack_start(vboxentry, True, True)
+      hbox.pack_start(self.previewButton, False, False)
+       
+      self.showrecibido = gtk.CheckButton('Mostrar notificacion en pantalla al recibir mensajes')
+      self.showrecibido.set_active(self.config.user['notshowRecibido'])
+      
+      self.showpensamiento =  gtk.CheckButton('Mostrar notificacion en pantalla cunado halla un nuevo pensamiento')
+      self.showpensamiento.set_active(self.config.user['notshowPensamiento'])
+      
+      self.showenviar =  gtk.CheckButton('Mostrar notificacion en pantalla cuando se envie un mensaje')
+      self.showenviar.set_active(self.config.user['notshowEnviar'])
+      
+      settings1 = gtk.VBox()
+      settings1.pack_start(self.showrecibido)
+      settings1.pack_start(self.showpensamiento)
+      settings1.pack_start(self.showenviar)
+      
+      frame1 = gtk.Frame('Notificaciones de eventos')
+      frame1.set_border_width(4)
+      frame1.add(settings1)
+
+      tipografia = gtk.HBox()
+      self.tipografialabel = gtk.Label('Tipografia')
+      tipostockimg1 = gtk.image_new_from_stock(gtk.STOCK_SELECT_COLOR, 
+                                               gtk.ICON_SIZE_MENU )
+      self.tipografiabut1 = gtk.Button()
+      self.tipografiabut1.add(tipostockimg1)
+      self.tipografiabut1.connect('clicked', self.clickColor)
+      tipostockimg2 = gtk.image_new_from_stock(gtk.STOCK_SELECT_FONT, 
+                                               gtk.ICON_SIZE_MENU )
+      self.tipografiabut2 = gtk.Button()
+      self.tipografiabut2.add(tipostockimg2)
+      self.tipografiabut2.connect('clicked', self.clickFont)
+      tipografia.pack_start(self.tipografialabel, False, False, 3)
+      tipografia.pack_start(self.tipografiabut1, False, False, 10)
+      tipografia.pack_start(self.tipografiabut2, False, False)
+      
+      posicion = gtk.HBox()
+      self.posicionlabel = gtk.Label('Posicion')
+      self.posicionCombo = gtk.combo_box_new_text()
+      self.posicionCombo.append_text('Superior izquierda')
+      self.posicionCombo.append_text('Superior derecha')
+      self.posicionCombo.append_text('Inferior izquierda')
+      self.posicionCombo.append_text('Inferior derecha')
+      self.posicionCombo.set_active(int(self.config.user['notCorner']))
+      
+      posicion.pack_start(self.posicionlabel, False, False, 3)
+      posicion.pack_start(self.posicionCombo, True, True, 10)
+      
+      desplazamiento = gtk.HBox()
+      self.desplazamientolabel = gtk.Label('Desplazamiento')
+      self.desplazamientoCombo = gtk.combo_box_new_text()
+      self.desplazamientoCombo.append_text('Horizontal')
+      self.desplazamientoCombo.append_text('Vertical')
+      self.desplazamientoCombo.set_active(int(self.config.user['notScroll']))
+      
+      desplazamiento.pack_start(self.desplazamientolabel, False, False, 3)
+      desplazamiento.pack_start(self.desplazamientoCombo, True, True, 10)
+
+      settings2 = gtk.VBox()      
+      settings2.pack_start(tipografia)
+      settings2.pack_start(posicion)
+      settings2.pack_start(desplazamiento)
+      
+      frame2 = gtk.Frame('Configuracion de notificaciones')
+      frame2.set_border_width(4)
+      frame2.add(settings2)
+      
+      self.pack_start(self.enablenot, False, False)
+      self.pack_start(hbox, False, False)
+      self.pack_start(frame1, False, False)
+      self.pack_start(frame2, False, False)
+      
+      self.show_all()
+      self.notToggled(self.enablenot)
+
+   #def playPreview(self, button):
+   def showPreview(self, *args):
+      pos = self.posicionCombo.get_active()
+      scroll = self.desplazamientoCombo.get_active()
+      font = self.notFont
+      color = self.notColor
+      theme = self.theme.get_active_text()
+      self.control['Notification'].preview(pos, scroll, font, color, theme)
+
+   def savetheme(self, combo):
+      active = combo.get_active_text()
+      if active == self.installNewText:
+         installed = self.installTheme(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,self.notInstaller)
+         if not installed == "":
+            active = installed
+            print active
+            combo.prepend_text(active)
+            self.notDefaultIndex += 1
+            combo.set_active(0)
+         else:
+            combo.set_active(self.notDefaultIndex)
+            active = "default"
+      self.config.user['themeNot'] = active
+      self.control['Notification'].updateConfig()
+   
+   def notInstaller(self, path):
+      themeName = path.split(os.sep)[-1]
+      themes = list(self.config.themesNot)
+      themes = [x for x in themes if not x.startswith('.')]
+      if themeName in themes:
+         print "There's already a Notification theme with the same name"
+         return ""
+      return self.config.installTheme(themeName, path)
+   
+   def installTheme(self, chooserAction, installFunction, chooserTitle="Seleccionar carpeta del Tema", validateFunction=None):
+      ''' chooserAction is a gtk.FILE_CHOOSER_ACTION specifying file or folder action '''
+      fileChooser = gtk.FileChooserDialog(title=chooserTitle, action=chooserAction,\
+                                              buttons=(gtk.STOCK_OK, gtk.RESPONSE_ACCEPT,\
+                                              gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+      fileChooser.set_select_multiple(False)
+      response = fileChooser.run()
+      if response == gtk.RESPONSE_ACCEPT:
+         selectedPath = fileChooser.get_filename()
+         themeName = installFunction(selectedPath)
+         fileChooser.destroy()
+         return themeName
+      else:
+         fileChooser.destroy()
+         return ""
+   
+   def save(self):
+      '''save the actual setting'''      
+      self.config.user['notshowRecibido'] = self.showrecibido.get_active()
+      self.config.user['notshowPensamiento'] = self.showpensamiento.get_active()
+      self.config.user['notshowEnviar'] = self.showenviar.get_active()
+      
+      self.config.user['notCorner'] = self.posicionCombo.get_active()
+      self.config.user['notScroll'] = self.desplazamientoCombo.get_active()
+      
+      self.config.user['notFont'] = self.notFont
+      self.config.user['notColor'] = self.notColor
+
+      self.config.user['enableNot'] = self.enablenot.get_active()
+      
+      #self.config.user['themeNot'] = self.theme.get_active_text()
+
+      self.control['Notification'].updateConfig()
+      #if self.enablesounds.get_active() == False and self.config.user['enableSounds'] == True:
+      #   self.handler.stop()
+      #elif self.enablesounds.get_active() == True and self.config.user['enableSounds'] == False:
+      #   self.handler.__init__(self.controller, self.controller.msn, action='start')
+     
+   def notToggled(self, check):
+      self.save()
+      self.theme.set_sensitive(check.get_active())
+      self.posicionlabel.set_sensitive(check.get_active())
+      self.posicionCombo.set_sensitive(check.get_active())
+      self.desplazamientolabel.set_sensitive(check.get_active())
+      self.desplazamientoCombo.set_sensitive(check.get_active())
+      self.tipografialabel.set_sensitive(check.get_active())
+      self.tipografiabut1.set_sensitive(check.get_active())
+      self.tipografiabut2.set_sensitive(check.get_active())
+      self.showrecibido.set_sensitive(check.get_active())
+      self.showpensamiento.set_sensitive(check.get_active())
+      self.showenviar.set_sensitive(check.get_active())
+      self.previewButton.set_sensitive(check.get_active())
+
+   def clickFont(self, arg):
+      fontDialog = gtk.FontSelectionDialog('Seleccionar Letra')
+      if self.notFont != None:
+         fontDialog.set_font_name(self.notFont)
+      response = fontDialog.run()
+      if response == gtk.RESPONSE_OK:
+         pangoDesc = pango.FontDescription(fontDialog.get_font_name())
+         self.notFont = pangoDesc.to_string()
+      fontDialog.destroy()
+
+   def clickColor(self, arg):
+      colorDialog = gtk.ColorSelectionDialog('Elegir color')
+      colorDialog.colorsel.set_has_palette(True)
+      red = int(self.notColor[1:3], 16) << 8
+      green = int(self.notColor[3:5], 16) << 8
+      blue = int(self.notColor[5:7], 16) << 8
+      colorDialog.colorsel.set_current_color(gtk.gdk.Color(red, green, blue))
+      response = colorDialog.run()
+      if response == gtk.RESPONSE_OK:
+         color = colorDialog.colorsel.get_current_color()
+         red = color.red >> 8
+         green = color.green >> 8
+         blue = color.blue >> 8
+         self.notColor = '#%02X%02X%02X' % (red, green, blue)
+      colorDialog.destroy()    
 
 class pageSonido(gtk.VBox):
    ''' This represents the Sounds page. '''   

@@ -9,7 +9,7 @@ LICENSE = 'Esta por verse (?). Se cree que Gpl. Archivos sacados de emesene o de
           'bajo que licencia se encuentran.'
 WEBSITE = 'http://www.okeyko.com'
 WEBSITE_LABEL = 'Pagina de Okeyko'
-AUTHORS = ('Nicolas Cisco', 'Emesene community & developers')
+AUTHORS = ('Nicolas Cisco', 'Agradecimientos a Emesene community & developers y a la comunidad de PyAr')
 
 class AboutOkeyko(gtk.AboutDialog):
     ''' About Dialog for Okeykoclient'''

@@ -333,8 +333,7 @@ class actmen(threading.Thread):
                         self.__Cola.put((self.__Sound.recibido, (), {}))
                     #self.__MainWindow.blink()
                     if self.__Notifications != None:
-                        self.__Cola.put((self.__Notifications.newNotification, \
-                                            ("Mensaje Nuevo", 0), {}))
+                        self.__Cola.put((self.__Notifications.mensajeNew,(),{}))
                        #notificaciones.newNotification("Mensaje Nuevo", 0, 1, color=col)
             if self.loop:
                 outbox, pensamientos = self.__Okeyko.newOutPen()
@@ -348,4 +347,7 @@ class actmen(threading.Thread):
                     self.__Okeyko.avatar, self.__Config.avatarSave)
                 self.__Cola.put((self.__MainWindow.new_pen, [pensamientos], {}))
                 if self.__Sound != None:
-                    self.__Cola.put((self.__Sound.pensamiento, (), {}))   
+                    self.__Cola.put((self.__Sound.pensamiento, (), {}))
+                if self.__Notifications != None:
+                    self.__Cola.put((self.__Notifications.pensamientoNew,
+                                         (),{} ))
