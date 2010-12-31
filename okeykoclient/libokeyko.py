@@ -163,8 +163,9 @@ class okeyko:
         self.__avatar = self.avatar(self.__avatarLink,'m')
         try:
             self.__estado = pag.find('b',{'style':'color:#FFF;'}).text
+            self.__estado = self.__estado.encode('iso-8859-1')
         except:
-            self.__estado = ""
+            self.__estado = ""        
         self.__inbox = self.__getInbox(pag)
         self.__outboxPag = 1
         self.__outbox = self.__getOutbox(pag)
@@ -329,6 +330,10 @@ class okeyko:
             de = pen.findAll('td')[1].text[4:]
             trs = pen.findAll('tr')
             mensaje = trs[1].text
+            try: # Corregir Codificacion
+                mensaje = mensaje.encode('iso-8859-1')
+            except:
+                print "Exception in __getPensamientos while codification correction"
             hora = trs[2].text
             Oid = 'a'
             avatar = pen.find('img')['src']
@@ -563,11 +568,15 @@ class okeyko:
         if self.__conectado != True: return        
         if len(estado) > 250:
             print "============= Error estado ========== \n okeyko.estadoSet: mas de 250 caracteres \n" + para
-            return False, "Mensaje con mas de 250 caracteres"
+            return False, "Mensaje con mas de 250 caracteres"        
         try:
-           estado = estado.encode("iso-8859-1")
+            #estado = unicode(estado, "utf-8").encode("iso-8859-1")
+            #estado = estado.encode("iso-8859-1")
+            #estado = unicode(estado, 'iso-8859-1')
+            #estado = unicode(estado, 'iso-8859-1').encode('utf-8')
+            estado = unicode(estado, 'iso-8859-1').encode('iso-8859-1')
         except:
-           pass
+            print "Exception in estadoSet while correcting Encoding"
         #url = "/nv02/estadoajax.php"
         url = "/v2/estadoajax.php"
         params =  urllib.urlencode({'estado': estado}) 
