@@ -45,14 +45,16 @@ class TrayIcon:
     '''This class creates the tray icon notification - Pre-GTK 2.10'''
 
     #def __init__(self, controller):
-    def __init__(self,mainWindow):
+    def __init__(self,Control):
         '''Constructor'''
         global disabled
+        self.disabled = disabled
         
+        self.__Control = Control
         #self.controller = controller
         #self.config = self.controller.config
         #self.mainWindow = self.controller.mainWindow
-        self.mainWindow = mainWindow
+        self.mainWindow = self.__Control['MainWindow']
         #self.theme = self.controller.theme
         self.themepath = paths.DEFAULT_THEME_PATH
         #self.status = ''
@@ -279,9 +281,10 @@ class TrayIcon:
         return False
         
     def on_quit( self, menuitem):
+        self.__Control['Quit']()
         #self.controller.quit( 0 )
-        gtk.main_quit()
-        exit()
+        #gtk.main_quit()
+        #exit()
 
     def on_agenda( self, menuitem):
         self.mainWindow.agenda_ventana()

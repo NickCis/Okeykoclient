@@ -1,4 +1,5 @@
 import os
+import sys
 import pygtk
 pygtk.require('2.0')
 import gtk
@@ -25,6 +26,18 @@ def gtk_main(Control):
         #Control['ActMen'].thStop()
         Control['ThreadHandler'].killActMen()
         Tray.buildMenu()
+
+    def quit(*args):
+        MainWindow.close_application()
+        if not Tray.disabled:
+            Tray.remove()
+        gtk.main_quit()
+        if Control['Okeyko'].conectado()[0]:
+            Control['Config'].writeUserConfig()
+            Control['Okeyko'].disconnect()
+        Control['Config'].writeGlobalConfig()
+        sys.exit(0)
+        
     
     if os.name != 'nt':
         gtk.gdk.threads_init()
@@ -36,12 +49,13 @@ def gtk_main(Control):
     iconFact = gtk.IconFactory()
     iconFact.add(OKC_FOKY, iconSetFoky)
     iconFact.add_default()
-
+    Control.update({'Quit': quit})
     Notificaciones = Notification.MainClass(Control)
     Control.update({'Notification': Notificaciones})
     MainWindow = okegtk.mainWindow(Control)
     Control.update({'MainWindow': MainWindow})
-    Tray = TrayIcon.TrayIcon(MainWindow)
+    #Tray = TrayIcon.TrayIcon(MainWindow)
+    Tray = TrayIcon.TrayIcon(Control)    
     #Control['ActMen'].setgui(MainWindow, Notificaciones)
     Control['ThreadHandler'].setgui(MainWindow, Notificaciones)
     #MainWindow.connect('redraw-done', Control['ActMen'].thStart)

@@ -1,4 +1,3 @@
-import sys
 import gtk
 import pango
 import gobject
@@ -153,7 +152,7 @@ class mainWindow(gtk.Window):
         button.grab_default()
 
         butsalir = gtk.Button("Salir")
-        butsalir.connect("clicked", self.close_application)
+        butsalir.connect("clicked", self.__Control['Quit'])
         vbox.pack_start(butsalir, False, False, 0)
 
         entry.connect('focus-out-event', self.entryUFocusOut,
@@ -283,7 +282,7 @@ class mainWindow(gtk.Window):
         ageAddcb = lambda x: self.agendaAdd()
         actiongroup.add_actions([('Cuenta', None, '_Cuenta'),
                                  ('Salir', gtk.STOCK_QUIT, '_Salir', "<Ctrl><Alt>q",
-                                    'Salir', self.close_application),
+                                    'Salir', self.__Control['Quit']),
                                  ('Desconectar', gtk.STOCK_DISCONNECT,
                                     '_Desconectar', None, 'Desconectar Okeyko',
                                         self.disconnect),
@@ -1292,10 +1291,9 @@ class mainWindow(gtk.Window):
         ''' Hace titilar al tray icon '''
         self.tray.tray.set_blinking(True)
 
-    def close_application(self, widget, event=None, data=None):
+    def close_application(self, *args):
         self.saveMainWindowGeometry()
-        gtk.main_quit()
-        sys.exit(0)
+        self.hide()
 
     def saveMainWindowGeometry(self):
         xPos, yPos = self.get_position()
