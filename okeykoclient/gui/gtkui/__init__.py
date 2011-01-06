@@ -12,7 +12,47 @@ import TrayIcon
 def gtk_main(Control):
 
     def redrawDone(*args):
+        def setInbox(inbox):
+            Control['MainWindow'].set_inbox(inbox)
+
+        def setPensamiento(pensamientos):
+            Control['MainWindow'].set_pen(pensamientos)
+
+        def setOutbox(outbox):
+            Control['MainWindow'].set_outbox(outbox)
+
+        def setFavorito(favbox):
+            Control['MainWindow'].set_fav(favbox)
+
+        def newInbox(mensajes):
+            Control['MainWindow'].new_inbox(mensajes)
+            Control['Sound'].recibido()
+            #self.__MainWindow.blink() #TODO
+            men = list(mensajes)
+            men.reverse()
+            for m in men: #TODO: Callback
+                Control['Notification'].mensajeNew(m[0], None, None, m[4], m[2])
+        
+        def newPensamiento(pensamientos):
+            Control['MainWindow'].new_pen(pensamientos)
+            Control['Sound'].pensamiento()
+            pen = list(pensamientos)
+            pen.reverse()
+            for p in pen:
+                Control['Notification'].pensamientoNew(p[0], None, None, p[4], p[2])
+
+        def newOutbox(outbox):
+            Control['MainWindow'].new_outbox(outbox)
+        
         #Control['ActMen'].thStart()
+        Control['ThreadHandler'].createActMen()
+        Control['ThreadHandler'].ActMenConnect('setInbox', setInbox)
+        Control['ThreadHandler'].ActMenConnect('setPensamiento', setPensamiento)
+        Control['ThreadHandler'].ActMenConnect('setOutbox', setOutbox)
+        Control['ThreadHandler'].ActMenConnect('setFavorito', setFavorito)
+        Control['ThreadHandler'].ActMenConnect('newInbox', newInbox)
+        Control['ThreadHandler'].ActMenConnect('newPensamiento', newPensamiento)
+        Control['ThreadHandler'].ActMenConnect('newOutbox', newOutbox)
         Control['ThreadHandler'].startActMen()
         # moved to okegtk.
         #Control['Config'].setCurrentUser(Control['Okeyko'].getUser())
@@ -63,7 +103,7 @@ def gtk_main(Control):
     #Tray = TrayIcon.TrayIcon(MainWindow)
     Tray = TrayIcon.TrayIcon(Control)    
     #Control['ActMen'].setgui(MainWindow, Notificaciones)
-    Control['ThreadHandler'].setgui(MainWindow, Notificaciones)
+    #Control['ThreadHandler'].setgui(MainWindow, Notificaciones)
     #MainWindow.connect('redraw-done', Control['ActMen'].thStart)
     MainWindow.connect('redraw-done', redrawDone)
     MainWindow.connect('redraw-disconnect', redrawDisconnect)

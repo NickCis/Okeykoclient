@@ -85,22 +85,17 @@ class ThreadHandler():
     def setControl(self, control):
         self.__Control = control
 
-    def setgui(self, MainWindow, Notificaciones=None):
-        '''MainWindow debe tener funciones:
-            set_inbox() new_inbox()
-            set_outbox() new_outbox()
-            set_fav()
-            new_inbox()
-            new_outbox()
-             '''
-        self.__MainWindow = MainWindow
-        self.__Notifications = Notificaciones
+    def ActMenConnect(self, action, callback):
+        ''' Connects de actions: newInbox newPensamiento newOutbox'''
+        self.threadDict['ActMen'].connect(action, callback)
 
-    def startActMen(self):
+    def createActMen(self):
         actmenThread = actmen(self.__Control)
-        actmenThread.setgui(self.__MainWindow, self.__Notifications)
+        #actmenThread.setgui(self.__MainWindow, self.__Notifications)
         self.threadDict.update({ 'ActMen': actmenThread })
-        actmenThread.start()
+        
+    def startActMen(self):
+        self.threadDict['ActMen'].start()
 
     def kill(self, name):
         if self.threadDict.has_key(name):
@@ -246,19 +241,26 @@ class actmen(threading.Thread):
         self.__Config = Control['Config']
         self.__MinId = None
         self.loop = True
+        self.setInCB = lambda *x, **y: 1
+        self.setPenCB = lambda *x, **y: 1
+        self.setOutCB = lambda *x, **y: 1
+        self.setFavCB = lambda *x, **y: 1
+        self.newInCB = lambda *x, **y: 1
+        self.newPenCB = lambda *x, **y: 1
+        self.newOutCB = lambda *x, **y: 1
         self.setDaemon(True)
         #self.start()
         
-    def setgui(self, MainWindow, Notificaciones=None):
-        '''MainWindow debe tener funciones:
-            set_inbox() new_inbox()
-            set_outbox() new_outbox()
-            set_fav()
-            new_inbox()
-            new_outbox()
-             '''
-        self.__MainWindow = MainWindow
-        self.__Notifications = Notificaciones
+    #def setgui(self, MainWindow, Notificaciones=None):
+    #    '''MainWindow debe tener funciones:
+    #        set_inbox() new_inbox()
+    #        set_outbox() new_outbox()
+    #        set_fav()
+    #        new_inbox()
+    #        new_outbox()
+    #         '''
+    #    self.__MainWindow = MainWindow
+    #    self.__Notifications = Notificaciones
         
     def thStart(self, *args, **kargs):
         while self.isAlive():
@@ -280,6 +282,24 @@ class actmen(threading.Thread):
         self.loop = False
         threading.Thread(target=self.join)
 
+    def connect(self, action, callback):
+
+        if action == 'setInbox':
+            self.setInCB = callback
+        elif action == 'setPensamiento':
+            self.setPenCB = callback
+        elif action == 'setOutbox':
+            self.setOutCB = callback
+        elif action == 'setFavorito':
+            self.setFavCB = callback
+        elif action == 'newInbox':
+            self.newInCB = callback
+        elif action == 'newPensamiento':
+            self.newPenCB = callback
+        elif action == 'newOutbox':
+            self.newOutCB = callback
+        
+
     def run(self):
         #if self.__Condition != None:
         #    self.__Condition.acquire()
@@ -298,25 +318,29 @@ class actmen(threading.Thread):
         iterDownAvatar(inbox, self.__Config.avatarLoad, self.__Okeyko.avatar,\
                         self.__Config.avatarSave)
 
-        self.__Cola.put((self.__MainWindow.set_inbox, [inbox], {}))
+        #self.__Cola.put((self.__MainWindow.set_inbox, [inbox], {}))
+        self.__Cola.put((self.setInCB, [inbox], {}))
 
         outbox = self.__Okeyko.outbox()
         iterDownAvatar(outbox, self.__Config.avatarLoad, self.__Okeyko.avatar,\
                         self.__Config.avatarSave)
 
-        self.__Cola.put((self.__MainWindow.set_outbox, [outbox], {}))
+        #self.__Cola.put((self.__MainWindow.set_outbox, [outbox], {}))
+        self.__Cola.put((self.setOutCB, [outbox], {}))
 
         favbox = self.__Okeyko.favbox()
         iterDownAvatar(favbox, self.__Config.avatarLoad, self.__Okeyko.avatar,\
                         self.__Config.avatarSave)
 
-        self.__Cola.put((self.__MainWindow.set_fav, [favbox], {}))
+        #self.__Cola.put((self.__MainWindow.set_fav, [favbox], {}))
+        self.__Cola.put((self.setFavCB, [favbox], {}))
 
         pensamientos = self.__Okeyko.pensamientos()
         iterDownAvatar(pensamientos, self.__Config.avatarLoad, self.__Okeyko.avatar,\
                         self.__Config.avatarSave)
 
-        self.__Cola.put((self.__MainWindow.set_pen, [pensamientos], {}))
+        #self.__Cola.put((self.__MainWindow.set_pen, [pensamientos], {}))
+        self.__Cola.put((self.setPenCB, [pensamientos], {}))
 
         while self.loop:
             wait = 0
@@ -329,27 +353,29 @@ class actmen(threading.Thread):
                     self.__MinId = mensajes[0][3]
                     iterDownAvatar(mensajes, self.__Config.avatarLoad,\
                         self.__Okeyko.avatar, self.__Config.avatarSave)
-                    self.__Cola.put((self.__MainWindow.new_inbox, [mensajes], {}))
-                    # TODO: ponerlo en forma que sea multi plataforma (usando modulo os)
-                    if self.__Sound != None:
-                        self.__Cola.put((self.__Sound.recibido, (), {}))
+                    #self.__Cola.put((self.__MainWindow.new_inbox, [mensajes], {}))
+                    self.__Cola.put((self.newInCB, [mensajes], {}))
+                    #if self.__Sound != None:
+                    #    self.__Cola.put((self.__Sound.recibido, (), {}))
                     #self.__MainWindow.blink()
-                    if self.__Notifications != None:
-                        self.__Cola.put((self.__Notifications.mensajeNew,(),{}))
+                    #if self.__Notifications != None:
+                    #    self.__Cola.put((self.__Notifications.mensajeNew,(),{}))
                        #notificaciones.newNotification("Mensaje Nuevo", 0, 1, color=col)
             if self.loop:
                 outbox, pensamientos = self.__Okeyko.newOutPen()
                 if outbox != False and self.loop:
                     iterDownAvatar(outbox, self.__Config.avatarLoad,\
                         self.__Okeyko.avatar, self.__Config.avatarSave)
-                    self.__Cola.put((self.__MainWindow.new_outbox, [outbox], {}))
+                    #self.__Cola.put((self.__MainWindow.new_outbox, [outbox], {}))
+                    self.__Cola.put((self.newOutCB, [outbox], {}))
             
             if pensamientos != False and self.loop:
                 iterDownAvatar(pensamientos, self.__Config.avatarLoad,\
                     self.__Okeyko.avatar, self.__Config.avatarSave)
-                self.__Cola.put((self.__MainWindow.new_pen, [pensamientos], {}))
-                if self.__Sound != None:
-                    self.__Cola.put((self.__Sound.pensamiento, (), {}))
-                if self.__Notifications != None:
-                    self.__Cola.put((self.__Notifications.pensamientoNew,
-                                         (),{} ))
+                self.__Cola.put((self.newPenCB, [pensamientos], {}))
+                #self.__Cola.put((self.__MainWindow.new_pen, [pensamientos], {}))
+                #if self.__Sound != None:
+                #    self.__Cola.put((self.__Sound.pensamiento, (), {}))
+                #if self.__Notifications != None:
+                #    self.__Cola.put((self.__Notifications.pensamientoNew,
+                #                         (),{} ))

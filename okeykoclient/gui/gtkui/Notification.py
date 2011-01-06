@@ -13,6 +13,11 @@ import gobject
 import pango
 import os
 
+CAN_PYNOTIFY = True
+try:
+    import pynotify    
+except:
+    CAN_PYNOTIFY = False
 #import Plugin
 #import dialog
 #import desktop
@@ -558,6 +563,7 @@ class MainClass:
 		# TODO: Agregar soporte de themes
         #self.theme = controller.theme
         self.Config = Control['Config']
+        self.Config.user['notCanPyNotify'] = CAN_PYNOTIFY
         #self.updateConfig()
 
 
@@ -581,43 +587,81 @@ class MainClass:
         self.NotiPixmap, NotiPMask = gtk.gdk.pixbuf_new_from_file(NotiPixmapF).render_pixmap_and_mask()
         NotiPixmapCloseF = self.Config.pathFile('Not-close.png')
         self.NotiClosePixmap = gtk.gdk.pixbuf_new_from_file(NotiPixmapCloseF)
-        self.Noti = NotificationManager(128, 200)        	
+        self.PyNotify = self.Config.user['notPyNotify']
+        if self.PyNotify and CAN_PYNOTIFY:
+            pynotify.init('okeykoclient')
+        else:
+            self.Noti = NotificationManager(128, 200)
 
-    def newNotification(self,string,dura=7):        
+    def pyNotification(self, string, title=None, callback=None, params=None, userPixbuf=None):
+        if CAN_PYNOTIFY:
+            userPixbuf = self.Config.avatarLoad(userPixbuf,
+                         False)[1] if (userPixbuf) else "okeykoclient"
+            title = 'Okeyko Client' if (not title) else title
+            Noti = pynotify.Notification(title, string, userPixbuf)
+            Noti.show()
+
+    def newNotification(self,string,dura=7):   
         if self.Config.user['enableNot']:
-            self.Noti.newNotification(string, self.corner, self.scroll, self.NotiPixmap, self.NotiClosePixmap, color=self.NotiCol, duration=dura)
-        return
+            if self.PyNotify and CAN_PYNOTIFY:
+                Noti = pynotify.Notification('Okeyko Client', string, 'okeykoclient')
+                Noti.show()
+            else:
+                self.Noti.newNotification(string, self.corner, self.scroll, self.NotiPixmap, self.NotiClosePixmap, color=self.NotiCol, duration=dura)
 
-    def mensajeNew(self, callback=None, params=None, userPixbuf=None):
+
+    def mensajeNew(self, user=None, callback=None, params=None, userPixbuf=None, text=None):
         if self.Config.user['notshowRecibido'] and self.Config.user['enableNot']:
-            string = "Nuevo mensaje"
-            self.Noti.newNotification(string, self.corner, self.scroll,\
+            string = "Has recibido un mensaje de %s" % user
+            if self.PyNotify and CAN_PYNOTIFY:
+                self.pyNotification(text, string, callback, params, userPixbuf)
+            else:
+                userPixbuf = gtk.gdk.pixbuf_new_from_file(self.Config.avatarLoad(
+                             userPixbuf, False)[1]) if (userPixbuf) else None
+                self.Noti.newNotification(string, self.corner, self.scroll,\
                                     self.NotiPixmap, self.NotiClosePixmap,\
                                     callback, params, userPixbuf, self.font,\
                                     self.color, 0)
-    def pensamientoNew(self, callback=None, params=None, userPixbuf=None):
+    def pensamientoNew(self, user=None, callback=None, params=None, userPixbuf=None, text=None):
         if self.Config.user['notshowPensamiento'] and self.Config.user['enableNot']:
-            string = "Nuevo Pensamiento"
-            self.Noti.newNotification(string, self.corner, self.scroll,\
+            string = "Nuevo Pensamiento de %s" % user
+            if self.PyNotify and CAN_PYNOTIFY:
+                self.pyNotification(text, string, callback, params, userPixbuf)
+            else:
+                userPixbuf = gtk.gdk.pixbuf_new_from_file(self.Config.avatarLoad(
+                             userPixbuf, False)[1]) if (userPixbuf) else None
+                self.Noti.newNotification(string, self.corner, self.scroll,\
                                     self.NotiPixmap, self.NotiClosePixmap,\
                                     callback, params, userPixbuf, self.font,\
                                     self.color, 7)
-    def enviar(self, callback=None, params=None, userPixbuf=None):
+    def enviar(self, user=None, callback=None, params=None, userPixbuf=None, text=None):
         if self.Config.user['notshowEnviar'] and self.Config.user['enableNot']:
-            string = "Mensaje enviado"
-            self.Noti.newNotification(string, self.corner, self.scroll,\
+            string = "Mensaje enviado a %s" % user
+            if self.PyNotify and CAN_PYNOTIFY:
+                self.pyNotification(string, text, callback, params, userPixbuf)
+            else:
+                userPixbuf = gtk.gdk.pixbuf_new_from_file(self.Config.avatarLoad(
+                             userPixbuf, False)[1]) if (userPixbuf) else None
+                self.Noti.newNotification(string, self.corner, self.scroll,\
                                     self.NotiPixmap, self.NotiClosePixmap,\
                                     callback, params, userPixbuf, self.font,\
                                     self.color, 7)
 
-    def preview(self, pos, scroll, font, color, theme):
+    def preview(self, pos, scroll, font, color, theme, pynot=False):
         if self.Config.user['enableNot']:
             string = "Ejemplo de Notificacion en Pantalla"
-            NotiPixmapF = self.Config.themePathFile(theme, 'guif.png')
-            notipx, NotiPMask = gtk.gdk.pixbuf_new_from_file(NotiPixmapF).render_pixmap_and_mask()
-            NotiPixmapCloseF = self.Config.themePathFile(theme, 'close.png')
-            closepx = gtk.gdk.pixbuf_new_from_file(NotiPixmapCloseF)
-            self.Noti.newNotification(string, pos, scroll,\
+            if pynot and CAN_PYNOTIFY:
+                pynotify.init('okeykoclient')
+                self.pyNotification(string, title="Ejemplo")
+            else:
+                userPixbuf = gtk.gdk.pixbuf_new_from_file(self.Config.pathFile(
+                             'theme-logo.png'))
+                self.Noti = NotificationManager(128, 200)
+                NotiPixmapF = self.Config.themePathFile(theme, 'guif.png')
+                notipx, NotiPMask = gtk.gdk.pixbuf_new_from_file(NotiPixmapF).render_pixmap_and_mask()
+                NotiPixmapCloseF = self.Config.themePathFile(theme, 'close.png')
+                closepx = gtk.gdk.pixbuf_new_from_file(NotiPixmapCloseF)
+                self.Noti.newNotification(string, pos, scroll,\
                                     notipx, closepx,\
-                                    None, None, None, font,\
+                                    None, None, userPixbuf, font,\
                                     color, 7)

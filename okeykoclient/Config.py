@@ -89,6 +89,8 @@ DEFAULT_USER_CONFIG = {
     'notOffset': '1',
     'notHeight': 128,
     'notWidth': 200,
+    'notCanPyNotify': False,
+    'notPyNotify': False,
     'enableNot': True,
     'tabR': True,
     'tabE': True,

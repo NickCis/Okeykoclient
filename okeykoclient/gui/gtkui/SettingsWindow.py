@@ -216,7 +216,11 @@ class pageNot(gtk.VBox):
       frame1.set_border_width(4)
       frame1.add(settings1)
 
+      self.pynotify =  gtk.CheckButton('Usar el PyNotify en vez de las notificaciones en Pantalla (requiere libnotify)')
+      self.pynotify.set_active(self.config.user['notPyNotify'])
+
       tipografia = gtk.HBox()
+      
       self.tipografialabel = gtk.Label('Tipografia')
       tipostockimg1 = gtk.image_new_from_stock(gtk.STOCK_SELECT_COLOR, 
                                                gtk.ICON_SIZE_MENU )
@@ -254,7 +258,8 @@ class pageNot(gtk.VBox):
       desplazamiento.pack_start(self.desplazamientolabel, False, False, 3)
       desplazamiento.pack_start(self.desplazamientoCombo, True, True, 10)
 
-      settings2 = gtk.VBox()      
+      settings2 = gtk.VBox()
+      settings2.pack_start(self.pynotify)
       settings2.pack_start(tipografia)
       settings2.pack_start(posicion)
       settings2.pack_start(desplazamiento)
@@ -278,7 +283,8 @@ class pageNot(gtk.VBox):
       font = self.notFont
       color = self.notColor
       theme = self.theme.get_active_text()
-      self.control['Notification'].preview(pos, scroll, font, color, theme)
+      pynot = self.pynotify.get_active()
+      self.control['Notification'].preview(pos, scroll, font, color, theme, pynot)
 
    def savetheme(self, combo):
       active = combo.get_active_text()
@@ -332,6 +338,8 @@ class pageNot(gtk.VBox):
       
       self.config.user['notFont'] = self.notFont
       self.config.user['notColor'] = self.notColor
+
+      self.config.user['notPyNotify'] = self.pynotify.get_active()
 
       self.config.user['enableNot'] = self.enablenot.get_active()
       
