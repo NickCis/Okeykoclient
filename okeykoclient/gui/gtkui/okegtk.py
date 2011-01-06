@@ -7,8 +7,8 @@ import About
 import Notebook
 import TextField
 import MensajeVen
+import LoginWindow
 import SettingsWindow
-
 
 
 UI = '''<ui>
@@ -91,129 +91,17 @@ class mainWindow(gtk.Window):
 
 
     def LoginWin(self):
+        def redraw(*args):
+            self.redraw_ventana()
         if self.child:
             self.remove(self.child)
-        vbox = gtk.VBox(False, 0)
-        self.add(vbox)
-        
-        hentry = gtk.HBox(False, 0)
-        vbox.pack_start(hentry, False, False, 0)
-        
-        labentry = gtk.Label("Usuario:")
-        hentry.pack_start(labentry, True, False, 0)
 
-        entry = gtk.Entry()
-        entry.set_max_length(50)
-        hentry.pack_start(entry, True, False, 0)  
-        entryComp = gtk.EntryCompletion()
-        entry.set_completion(entryComp)
-        userListStore = gtk.ListStore (str, str)
-        for a, b in self.__Config.userList:
-            userListStore.append([a,'foto',])
-        entryComp.set_model (userListStore)
-        entryComp.set_text_column(0)
-
-        hcontra = gtk.HBox(False, 0)
-        vbox.pack_start(hcontra, False, False, 0)
-        
-        labcontra = gtk.Label("Password:")
-        hcontra.pack_start(labcontra, True, False, 0)
-
-        contra = gtk.Entry()
-        contra.set_max_length(50)
-        contra.set_visibility(False)
-        hcontra.pack_start(contra, True, False, 0)
-
-        buttonBox = gtk.VBox(False, 0)
-        vbox.pack_start(buttonBox, False, False, 0)
-        
-        checkRe = gtk.CheckButton("Recordar Me")
-        buttonBox.pack_start(checkRe, True, False, 0)
-        #check.connect("toggled", self.entry_toggle_editable, entry)
-        checkRe.set_active(self.__Config.glob['rememberMe'])
-    
-        checkRC = gtk.CheckButton("Recordar Password")
-        buttonBox.pack_start(checkRC, True, False, 0)
-        #check.connect("toggled", self.entry_toggle_visibility, entry)
-        checkRC.set_active(self.__Config.glob['rememberMyPassword'])
-
-        checkAL = gtk.CheckButton("Auto Login")
-        buttonBox.pack_start(checkAL, True, False, 0)
-        #check.connect("toggled", self.entry_toggle_visibility, entry)
-        checkAL.set_active(False)
-
-        button = gtk.Button("Conectar")
-        contra.connect("activate", self.conectar, entry, contra,
-            (checkRe.get_active, checkRC.get_active, checkAL.get_active))
-        button.connect("clicked", self.conectar, entry, contra,
-            (checkRe.get_active, checkRC.get_active, checkAL.get_active))
-        vbox.pack_start(button, False, False, 0)
-        button.set_flags(gtk.CAN_DEFAULT)
-        button.grab_default()
-
-        butsalir = gtk.Button("Salir")
-        butsalir.connect("clicked", self.__Control['Quit'])
-        vbox.pack_start(butsalir, False, False, 0)
-
-        entry.connect('focus-out-event', self.entryUFocusOut,
-            contra, (checkRe.set_active, checkRC.set_active,
-            checkAL.set_active))
-        entryComp.connect('match-selected', self.seterCompletionEntry,
-            entry, contra, (checkRe.set_active, checkRC.set_active,
-            checkAL.set_active))
-
+        LoginWin = LoginWindow.LoginWindow(self.__Control)
+        LoginWin.connect('connected', redraw)
+        self.add(LoginWin)
         self.show_all()
+        #LoginWin.focusUserEntry()
 
-    def seterCompletionEntry(self, completion, model, Iter, entry,
-                                                    contra, checks):
-        entry.set_text(model[Iter][0])
-        contra.grab_focus()
-
-    def entryUFocusOut(self, widget, event, contra, checks):
-        key = widget.get_text()
-        if key in self.__Config.userList:
-            if self.__Config.userList[key] != "0":
-                contra.set_text(self.__Config.userList[key])
-                checks[0](True)
-                checks[1](True)
-            else:
-                checks[0](True)
-                checks[1](False)
-        else:
-            contra.set_text('')
-            checks[1](False)    
-
-    def conectar(self, widget, user, contra, checks):
-        ''' Callback para conectar '''
-        def post_conectar(arg):
-            conectado, error = self.__Okeyko.conectado()
-            if conectado:
-                self.redraw_ventana()
-            else:
-                self.child.set_property("sensitive", True)
-                anim.destroy()
-                label.set_text(error)
-
-        self.child.set_property("sensitive", False)
-        entry_text = user.get_text()
-        contra_text = contra.get_text()
-        if checks[0]():
-            if checks[1]():
-                self.__Config.userList[entry_text] = contra_text
-            else:
-                self.__Config.userList[entry_text] = False
-        PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
-        anim = gtk.Image()
-        anim.set_from_animation(PBanim)
-        label = gtk.Label("\n Conectando \n")
-        label.set_use_markup(True)
-        self.child.pack_start(anim, False, False, 0)
-        self.child.pack_start(label, False, False, 0)
-        anim.show()
-        label.show()
-        print "---- Conectando -----"
-        self.__queueToServer.put((self.__Okeyko.login, (entry_text, contra_text),
-                                  {}, post_conectar, (), {}))
 
     def redraw_ventana(self):
         '''Cambia la ventana despues de conectarse '''
@@ -345,6 +233,8 @@ class mainWindow(gtk.Window):
         uAvatar.write(userAvatar)
         uAvatar.close()
         userAvatar = uAvatar.get_pixbuf()
+        userAvatar = userAvatar.scale_simple( 50 * userAvatar.get_width() / userAvatar.get_height(),
+                                              50, gtk.gdk.INTERP_BILINEAR )
         userIm = gtk.Image()
         userIm.set_from_pixbuf(userAvatar)
         userHbox.pack_start(userIm, False, False)
@@ -1292,7 +1182,8 @@ class mainWindow(gtk.Window):
         ''' Hace titilar al tray icon '''
         self.tray.tray.set_blinking(True)
 
-    def close_application(self, *args):
+    def close_application(self, *args): #TODO: DEPRECATED
+        print "Close application deprecated"
         self.saveMainWindowGeometry()
         self.hide()
 

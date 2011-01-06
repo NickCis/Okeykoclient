@@ -378,6 +378,49 @@ class Main:
             self.user['theme' + themeType]
         return themePathFile(theme, archive)
 
+    def profileAvatarLoad(self, user=None, op=True):
+        if user == None:
+            avatarPath = self.pathFile('theme-logo.png')
+            userE = False
+        else:
+            user = user.lower()
+            Path = os.path.join(paths.CONFIG_DIR, user)
+            if os.path.isdir(Path):
+                for arch in os.listdir(Path):
+                    lastdot = arch.rfind('.') if (arch.rfind('.') != -1) else len(arch)
+                    ext = arch[lastdot:]
+                    name = arch[:lastdot]
+                    if str(name) == str('avatar'):
+                        avatarPath = os.path.join(Path, arch)
+                        userE = True
+                        break
+                else:
+                    avatarPath = self.pathFile('theme-logo.png')
+                    userE = False
+            else:
+                avatarPath = self.pathFile('theme-logo.png')
+                userE = False
+        if op:
+            avatarFile = open(avatarPath, 'r')
+            avatarImg = avatarFile.read()
+            avatarFile.close()
+        else:
+            avatarImg = avatarPath            
+        return userE, avatarImg
+    
+    def profileAvatarSave(self, avatar, avatarimg):
+        print "Saving profile avatar"
+        lastdot = avatar.rfind('.') if (avatar.rfind('.') != -1) else len(arch)
+        avatarfileName = 'avatar%s' % (avatar[lastdot:])        
+        avatarPath = os.path.join(paths.CONFIG_DIR, self.currentUser, avatarfileName)
+        try:
+            avatarFile = open(avatarPath, 'wb')
+            avatarFile.write(avatarimg)
+            avatarFile.close()
+            return True, avatarPath
+        except:
+            return False, None
+
     def avatarLoad(self, avatar, op=True):
         avatarPath = os.path.join(paths.CONFIG_DIR, self.currentUser, 'avatars', avatar)
         if os.path.isfile(avatarPath):

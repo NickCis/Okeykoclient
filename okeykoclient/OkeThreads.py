@@ -293,6 +293,8 @@ class actmen(threading.Thread):
         except:
             pass
 
+        self.__Config.profileAvatarSave(*self.__Okeyko.avatarinfo()) #SavesUserAva
+        
         iterDownAvatar(inbox, self.__Config.avatarLoad, self.__Okeyko.avatar,\
                         self.__Config.avatarSave)
 

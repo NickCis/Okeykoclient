@@ -108,6 +108,7 @@ class okeyko:
         self.__favPag = False
         self.__favBor = False
         self.__avatar = False
+        self.__avatarLink = None
         self.__estado = False
         self.__captcha = None
         self.__envio = False
@@ -160,7 +161,7 @@ class okeyko:
         pag = BS(unicode(self.pagina(url), 'latin-1'))
         avt = pag.find('img',{'title':'Usuario', 'class':'reflect rheight20'})['src']
         self.__avatarLink = avt[avt.rfind('/')+1:]
-        self.__avatar = self.avatar(self.__avatarLink,'m')
+        self.__avatar = self.avatar(self.__avatarLink,'g')
         try:
             self.__estado = pag.find('b',{'style':'color:#FFF;'}).text
             self.__estado = self.__estado.encode('iso-8859-1')
@@ -344,6 +345,10 @@ class okeyko:
     def userinfo(self):
         if self.__conectado != True: return
         return self.__usuario, self.__avatar, self.__estado
+
+    def avatarinfo(self):
+        if self.__conectado != True: return
+        return self.__avatarLink, self.__avatar
 
     def getUser(self):
         if self.__conectado != True: return

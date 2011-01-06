@@ -29,7 +29,12 @@ def gtk_main(Control):
         Tray.buildMenu()
 
     def quit(*args):
-        MainWindow.close_application()
+        for window in gtk.window_list_toplevels(): #Hides all windows. 
+            try:
+                window.saveMainWindowGeometry()
+            except:
+                pass
+            window.hide()
         if not Tray.disabled:
             Tray.remove()
         gtk.main_quit()
