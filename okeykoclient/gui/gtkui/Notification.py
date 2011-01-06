@@ -595,10 +595,16 @@ class MainClass:
 
     def pyNotification(self, string, title=None, callback=None, params=None, userPixbuf=None):
         if CAN_PYNOTIFY:
-            userPixbuf = self.Config.avatarLoad(userPixbuf,
-                         False)[1] if (userPixbuf) else "okeykoclient"
+            if userPixbuf:
+                userpixbufPath = self.Config.avatarLoad(userPixbuf, False)[1]
+            else:
+                userpixbufPath = self.Config.pathFile('theme-logo.png')
+            userPixbuf = gtk.gdk.pixbuf_new_from_file(userpixbufPath)
+            #userPixbuf = resizePixbuf(userPixbuf, 48, 48)                
             title = 'Okeyko Client' if (not title) else title
-            Noti = pynotify.Notification(title, string, userPixbuf)
+            Noti = pynotify.Notification(title, string)
+            Noti.set_hint_string ("x-canonical-append", "allowed")
+            Noti.set_icon_from_pixbuf(userPixbuf)
             Noti.show()
 
     def newNotification(self,string,dura=7):   
