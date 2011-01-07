@@ -581,10 +581,142 @@ class pageTema(gtk.VBox):
 
     def save(self):
         pass
-    
-class pageEscritorio(gtk.VBox):
-    def __init__(self, Control):
-        gtk.VBox.__init__(self)
 
-    def save(self):
-        pass
+#class DesktopPage(gtk.VBox):pageEscritorio
+class pageEscritorio(gtk.VBox):
+    ''' This represents the desktop page. '''
+    
+    def __init__(self, Control):
+        gtk.VBox.__init__(self)       
+        self.config = Control['Config']        
+        self.control = Control
+        self.set_spacing(SPACING-3)
+        self.set_border_width(10)
+
+        lbTitle = gtk.Label()
+        lbTitle.set_markup('<b>Integracion con el entorno de escritorio</b>')
+        hbTitleLabel = gtk.HBox()
+        hbTitleLabel.pack_start(lbTitle, False, True, padding=5)
+        self.pack_start(hbTitleLabel, False, False, padding=5)
+
+        self.urlSettings = UrlSettings(self.config, Control['desktop'])
+        frame1 = gtk.Frame('Enlaces y Archivos')
+#        frame1.set_border_width(4)
+        frame1.add(self.urlSettings)
+        
+        #self.emailSettings = EmailSettings(config)
+        #frame2 = gtk.Frame(_('E-mails'))
+        ##frame2.set_border_width(4)
+        #frame2.add(self.emailSettings)
+
+        #self.rgba = gtk.CheckButton(_('Enable rgba colormap (requires restart)'))
+        #self.rgba.set_active(self.config.glob['rgbaColormap'])
+        #self.rgba.set_tooltip_text(_('If enabled, it gives the desktop theme the ability' \
+        #                             ' to make transparent windows using the alpha channel'))
+
+        self.disableTray = gtk.CheckButton('Desactivar icono en bandeja (requiere reiniciar)')
+        self.disableTray.set_active(self.config.glob['disableTrayIcon'])
+
+        #self.pack_start(self.rgba, False)
+        self.pack_start(self.disableTray, False)
+        self.pack_start(frame1, False)
+        #self.pack_start(frame2, False)
+
+    def save(self, widget=None):
+        #self.config.glob['rgbaColormap'] = self.rgba.get_active()
+        self.config.glob['disableTrayIcon'] = self.disableTray.get_active()
+        self.urlSettings.save()
+        #self.emailSettings.save()       
+
+
+class UrlSettings(gtk.VBox):
+    def __init__(self, config, desktop):
+        gtk.VBox.__init__(self)
+        self.desktop = desktop
+        self.set_spacing(2)
+        self.set_border_width(4)
+        self.config = config
+
+        detected = self.desktop.get_desktop(True)
+        if detected:
+            #commandline = ' '.join(self.desktop.get_command(detected, '')).strip()
+            tmp = {
+                'detected': detected,
+                #'commandline': commandline,
+            }
+            #self.markup = 'El entorno de escritorio detectado es ' \
+            #    '<b>"%(detected)s"</b>. ' \
+            #    '<span face="Monospace">%(commandline)s</span> ' \
+            #    'se usara para abrir enlaces y archivos' % tmp
+            self.markup = 'El entorno de escritorio detectado es ' \
+                '<b>"%(detected)s"</b>. ' \
+                'se usara para abrir enlaces y archivos' % tmp
+        else:
+            self.markup = '<b>No se detecto entorno de escritorio.</b> ' \
+                'El primer navegador encontrado se usara para abrir enlaces'
+
+        self.infolabel = gtk.Label()
+
+        self.infolabel.set_alignment(0.0, 0.0)
+
+        self.hboxentry = gtk.HBox()
+        self.entry = gtk.Entry()
+        self.entry.connect('activate', self.save)
+        self.hboxentry.set_spacing(3)
+        self.hboxentry.pack_start(gtk.Label('Comando:'), False)
+        self.hboxentry.pack_start(self.entry)
+
+        self.override = gtk.CheckButton('Sobreescribir Configuracion detectada')
+        self.override.set_active(self.config.glob['overrideDesktop'] != '')
+        self.override.connect('toggled', self.toggleOverride)
+
+        self.helplabel = gtk.Label()
+        self.helplabel.set_markup('<i>Nota:</i> se reemplazara %s ' \
+            'por la url a abrir' % '%url%')
+        self.helplabel.set_alignment(0.5, 1.0)
+
+        self.hboxtest = gtk.HBox()
+        self.testbutton = gtk.Button('Click para probar')
+        self.testbutton.connect('clicked', self.testDesktop)
+        self.hboxtest.pack_start(self.helplabel, True, False)
+        self.hboxtest.pack_start(self.testbutton, False, True, 6)
+
+        self.hboxOverride = gtk.HBox()
+        self.hboxOverride.set_spacing(10)
+        self.hboxOverride.pack_start(self.override, False)
+        self.hboxOverride.pack_start(self.hboxentry, True)
+
+        self.pack_start(self.infolabel, False)
+        self.pack_start(self.hboxOverride, False)
+        self.pack_start(self.hboxtest, False)
+
+        self.toggleOverride()
+        self.connect('map', self.on_mapped)
+
+    def toggleOverride(self, override=None):
+        active = self.override.get_active()
+        self.hboxentry.set_sensitive(active)
+        self.hboxtest.set_sensitive(active)
+        if active:
+            self.entry.set_text(self.config.glob['overrideDesktop'])
+        else:
+            self.entry.set_text('')
+        self.save()
+
+    def save(self, widget=None):
+        self.desktop.override = self.entry.get_text()
+        self.config.glob['overrideDesktop'] = self.entry.get_text()
+
+    def testDesktop(self, button):
+        self.save()
+        try:
+            self.desktop.open('http://okeykoclient.sourceforge.net')
+        except OSError:
+            pass
+
+    def on_mapped(self, widget):
+        #hack to fix the line wrap
+        self.infolabel.set_size_request(self.hboxOverride.size_request()[0],-1)
+        self.infolabel.set_justify(gtk.JUSTIFY_FILL)
+        self.infolabel.set_line_wrap(True)
+        self.infolabel.set_markup(self.markup)

@@ -64,7 +64,9 @@ DEFAULT_GLOBAL_CONFIG = {
     'theme': 'default',
     'rememberMe': True,
     'rememberMyPassword': False,
-    'lastLoggedAccount': 'Nadie'
+    'lastLoggedAccount': 'Nadie',
+    'disableTrayIcon': False,
+    'overrideDesktop': ''
 }
 
 

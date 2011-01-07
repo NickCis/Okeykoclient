@@ -24,5 +24,6 @@ Section "Start Menu Shortcuts"
 
 	CreateDirectory "$SMPROGRAMS\okeykoclient"
 	CreateShortCut "$SMPROGRAMS\okeykoclient\okeykoclient.lnk" "$INSTDIR\okeykoclient.exe" "" "$INSTDIR\okeykoclient.exe" 0
+	CreateShortCut "$SMPROGRAMS\okeykoclient\okeykoclient_debug.lnk" "$INSTDIR\okeykoclient_debug.exe" "" "$INSTDIR\okeykoclient.exe" 0
 
 SectionEnd

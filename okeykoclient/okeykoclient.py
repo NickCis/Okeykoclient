@@ -2,11 +2,14 @@
 #import Queue
 #import threading
 
-import libokeyko
-import Config
-from gui import gtkui
-import OkeThreads
 import Sound
+import Config
+import desktop
+import libokeyko
+import OkeThreads
+from gui import gtkui
+
+
 
 
 def main():
@@ -24,7 +27,8 @@ def main():
     Control = { 'queueToGui' : ThreadHandler.queueToGui,
                 'queueToServer' : ThreadHandler.queueToServer, 
                 'Okeyko' : Okeyko, 'Config' : Conf, 'Sound' : Sonido, 
-                'queueManager' : queueManager, 'ThreadHandler' : ThreadHandler}
+                'queueManager' : queueManager, 'ThreadHandler' : ThreadHandler,
+                'desktop' : desktop}
     ThreadHandler.setControl(Control)
     #ActMen = OkeThreads.actmen(Control)
     #Control.update({'ActMen':ActMen})

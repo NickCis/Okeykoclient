@@ -1,7 +1,6 @@
 import gtk
 import pango
 import gobject
-import webbrowser as WB
 
 import About
 import Notebook
@@ -108,9 +107,9 @@ class mainWindow(gtk.Window):
         def launchPag(*args): #TODO
             pag = args[0].get_name()
             if pag == 'OkePag':
-                WB.open('http://www.okeyko.com')
+                self.__Control['desktop'].open('http://www.okeyko.com')
             elif pag == 'Pag':
-                WB.open('http://okeykoclient.sourceforge.net')
+                self.__Control['desktop'].open('http://okeykoclient.sourceforge.net')
             
         def aboutClient(*args): #TODO
             about = About.AboutOkeyko(self.__Config)
