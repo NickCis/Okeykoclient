@@ -1,44 +1,34 @@
 import re
-import httplib, urllib
+import urllib2
+import cookielib
 import htmlentitydefs
+import MultipartPostHandler
+from urllib import urlencode
 from BeautifulSoup import BeautifulSoup
-#from xml.etree import ElementTree as ET
 
-def download(dom, url, params=None, ref=False, cookie=None, ctype=False, clength=False):
+class urldownload:
+    def __init__(self):
+        self.cookies = cookielib.CookieJar()
+        self.proxy = None
+        self.auth = None
+        self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookies),
+                                           MultipartPostHandler.MultipartPostHandler)
+    def open(self, url, post=None, get=None ):
+        if get:            
+            url = "url?%s" % urlencode(get)
+        return self.opener.open(url, post)
 
-    headers = {
-                "User-Agent": "Mozilla/5.0 (X11; U; Linux i686; es-AR; rv:1.9.1.9) Gecko/20100401 Ubuntu/9.10 (karmic) Firefox/3.5.9",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "es-ar,es;q=0.8,en-us;q=0.5,en;q=0.3",
-                "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
-                "Keep-Alive": "300",
-                "Proxy-Connection": "keep-alive"
-                }
-    if ref:
-        headers["Referer"] = "http://www.okeyko.com/default.php"
-        #headers["Referer"] = "http://www.okeyko.com/iphone/index.php"
-    if cookie:
-        headers["Cookie"] = cookie
-    if ctype:
-        headers["Content-Type"] = "application/x-www-form-urlencoded"
-    if clength:
-        headers["Content-Length"] = len(params)
-    
-    conn = httplib.HTTPConnection(dom, 80)
-    if params:
-        conn.request("POST", url, params, headers)
-    else:
-        conn.request("GET", url, params, headers)
-    resp = conn.getresponse()
-    return resp
-
-def search_between(ini, end, html):
-    try:
-        html = html[html.find(ini) + len(ini):]
-        html = html[:html.find(end)]
-        return html
-    except:
-        return None
+    def setProxy(self, proxy, auth=None):
+        '''proxy, auth
+           ip:port, (user,pass)
+           xxx.xxx.xxx.xxx:xx'''
+        self.proxy = proxy
+        self.opener.add_handler(urllib2.ProxyHandler({'http': proxy}))
+        if auth:
+            self.auth = auth
+            proxy_auth_handler = urllib2.ProxyBasicAuthHandler()
+            proxy_auth_handler.add_password(None, proxy, auth[0], auth[1])
+            self.opener.add_handler(proxy_auth_handler)
 
 def unescape(text):
    """Removes HTML or XML character references 
@@ -94,9 +84,8 @@ def removeListInList(lsts, x):
 
 class okeyko:
     def __init__(self):
-        self.__dom = "www.okeyko.com"
+        self.__download = urldownload()
         self.__conectado = False
-        self.__cookie = None
         self.__usuario = None
         self.__contra = None
         self.__agenda_lista = None
@@ -118,24 +107,19 @@ class okeyko:
     def login(self, usuario, contra):
         self.__usuario = usuario if (usuario[:1] != "@") else usuario[1:]
         self.__contra = contra
-        self.set_cookie()
+        self.connect()
         if self.__conectado:
            self.get_all()
         return
 
-    def set_cookie(self):
+    def connect(self):
         if (self.__usuario == None) | (self.__contra == None): 
             self.__conectado = False
             self.__conectado_result = "Usuario o Pass no seteadas"
             return
-        #url = "/nv02/validar_usuario.php" #Cambios para okeyko2.0
-        url = "/v2/validar_usuario.php" #Cambios para okeyko2.0
-        params =  urllib.urlencode({'usuario': self.__usuario, 'clave': self.__contra}) #Ok2.0
-        #params =  {'usuario': self.__usuario, 'clave': self.__contra} #Ok2.0
-        resp = download(self.__dom, url, params, True, None, True, True)
-        self.__cookie = resp.getheader("set-cookie")
-        pag = resp.read()
-        resp.close()
+        url = "http://www.okeyko.com/v2/validar_usuario.php"
+        params =  {'usuario': self.__usuario, 'clave': self.__contra}
+        pag = self.pagina(url, post=params)
         if pag.find("Password o Usuario incorrecto") != -1: #Ok2.0
             self.__conectado = False
             self.__conectado_result = BS(pag).text #Ok2.0
@@ -146,17 +130,16 @@ class okeyko:
         return
 
     def conectado(self):
-        #if self.pagina("/nv02/index.php").find("|| Hola") == -1:
-        if self.pagina("/v2/index.php").find("|| Hola") == -1:
+        if self.pagina("http://www.okeyko.com/v2/index.php").find(
+                                "|| Hola") == -1:
             self.__conectado = False
-            self.set_cookie()
+            self.connect()
         return self.__conectado, self.__conectado_result
         
     def get_all(self):
         ''' Obtiene: inbox, outbox, avatar, estado'''
         if self.__conectado != True: return
-        #url = "/nv02/boceto.php"
-        url = "/v2/boceto.php"
+        url = "http://www.okeyko.com/v2/boceto.php"
         #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
         pag = BS(unicode(self.pagina(url), 'latin-1'))
         avt = pag.find('img',{'title':'Usuario', 'class':'reflect rheight20'})['src']
@@ -177,8 +160,7 @@ class okeyko:
         self.agenda_lista()
 
     def getCaptcha(self):
-        #url = '/nv02/CaptchaSecurityImages.php?width=100&height=40&characters=5'
-        url = '/v2/CaptchaSecurityImages.php?width=100&height=40&characters=5'
+        url = 'http://www.okeyko.com/v2/CaptchaSecurityImages.php?width=100&height=40&characters=5'
         self.__captcha = self.pagina(url)
 
     def captcha(self):
@@ -186,11 +168,10 @@ class okeyko:
 
     def getMoreInbox(self):
         lastOId = self.__inbox[len(self.__inbox) - 1][3]
-        params = urllib.urlencode({'lastmsg': str(lastOId)})
-        #url = "/nv02/0ajax_more.php"
-        url = "/v2/0ajax_more.php"
+        params = {'lastmsg': str(lastOId)}
+        url = "http://www.okeyko.com/v2/0ajax_more.php"
         #pag = BS(unescape(unicode(self.pagina(url,params), 'latin-1')))
-        pag = BS(unicode(self.pagina(url,params), 'latin-1'))
+        pag = BS(unicode(self.pagina(url, post=params), 'latin-1'))
         Ins = self.__getInbox(pag)
         for i in Ins:
             self.__inbox.append(i)
@@ -202,9 +183,7 @@ class okeyko:
             self.__outboxPag = self.__outboxPag + 1
         else:
             self.__outboxBor = False
-        #url = "/nv02/boceto_enviados.php?paginae=%s" % self.__outboxPag
-        #url = "/nv02/boceto.php?paginae=%s" % self.__outboxPag
-        url = "/v2/boceto.php?paginae=%s" % self.__outboxPag
+        url = "http://www.okeyko.com/v2/boceto.php?paginae=%s" % self.__outboxPag
         #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
         pag = BS(unicode(self.pagina(url), 'latin-1'))
         Outs = self.__getOutbox(pag)
@@ -229,8 +208,7 @@ class okeyko:
             self.__favPag = self.__favPag + 1
         else:
             self.__favBor = False
-        #url = "/nv02/boceto.php?pagina=%s" % self.__favPag
-        url = "/v2/boceto.php?pagina=%s" % self.__favPag
+        url = "http://www.okeyko.com/v2/boceto.php?pagina=%s" % self.__favPag
         #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
         pag = BS(unicode(self.pagina(url), 'latin-1'))
         Favs = self.__getFavs(pag)
@@ -363,7 +341,7 @@ class okeyko:
         
     def inboxNew(self, minId=0):
         #url = "/nv02/nuevos.php"
-        url = "/v2/nuevos.php"
+        url = "http://www.okeyko.com/v2/nuevos.php"
         pag = self.pagina(url).strip()
         #print pag
         if pag == "</form >":
@@ -414,7 +392,7 @@ class okeyko:
         else:
             self.__envio = False
         if pag == None:
-            url = "/v2/boceto.php"
+            url = "http://www.okeyko.com/v2/boceto.php"
             pag = BS(unicode(self.pagina(url), 'latin-1'))
         Outs = self.__getOutbox(pag)
         firstOutId = int(self.__outbox[0][3])
@@ -442,8 +420,7 @@ class okeyko:
         ''' Vuelve a descargar favs y devuelve los mensajes de favoritos en una lista
         Formato: [de, hora, mensaje, Oik, avatar, leido, fav] devuelve false si no hay ninguno'''
         if self.__conectado != True: return
-        #url = "/nv02/boceto.php"
-        url = "/v2/boceto.php"
+        url = "http://www.okeyko.com/v2/boceto.php"
         #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
         pag = BS(unicode(self.pagina(url), 'latin-1'))
         self.__favPag = 1
@@ -461,7 +438,7 @@ class okeyko:
         ''' Vuelve a descargar pensamientos y devuelve los mensajes de favoritos en una lista
         Formato: [de, hora, mensaje, Oik, avatar] devuelve false si no hay ninguno'''
         if self.__conectado != True: return
-        url = "/v2/boceto.php"
+        url = "http://www.okeyko.com/v2/boceto.php"
         pag = BS(unicode(self.pagina(url), 'latin-1'))
         self.__pensamientos = self.__getPensamientos(pag)
         return self.pensamientos()
@@ -470,7 +447,7 @@ class okeyko:
         '''Devuelve si hay, pensamientos nuevos'''
         if self.__conectado != True: return
         if pag == None:
-            url = "/v2/boceto.php"
+            url = "http://www.okeyko.com/v2/boceto.php"
             pag = BS(unicode(self.pagina(url), 'latin-1'))
         Pens = self.__getPensamientos(pag)
         firstPenDate = self.__pensamientos[0][1]
@@ -492,27 +469,25 @@ class okeyko:
     def newOutPen(self):
         '''Binding para outboxNew y pensamientosNew para hacer una sola desgarga
            de la pagina. Devuelve: [outbouxNew] [pensamientosNew]'''
-        url = "/v2/boceto.php"
+        url = "http://www.okeyko.com/v2/boceto.php"
         pag = BS(unicode(self.pagina(url), 'latin-1'))
         return self.outboxNew(pag), self.pensamientosNew(pag)
 
     def set_leido(self, ok_id):
         ok_id = int(ok_id) + 1
-        params = urllib.urlencode({'lastmsg': str(ok_id)})
+        params = {'lastmsg': str(ok_id)}
         #url = "/nv02/0ajax_more.php"
-        url = "/v2/0ajax_more.php"
+        url = "http://www.okeyko.com/v2/0ajax_more.php"
         self.pagina(url,params)
         return
 
     def setFav(self, favId):
-        #url = '/nv02/fav-add.php?%s' % favId
-        url = '/v2/fav-add.php?%s' % favId
+        url = 'http://www.okeyko.com/v2/fav-add.php?%s' % favId
         self.pagina(url)
         return
 
     def setNoFav(self, favId):
-        #url = '/nv02/fav-no.php?%s' % favId
-        url = '/v2/fav-no.php?%s' % favId
+        url = 'http://www.okeyko.com/v2/fav-no.php?%s' % favId
         self.pagina(url)
         removeListInList(self.__favbox, favId)
         self.__favBor = True
@@ -527,9 +502,8 @@ class okeyko:
         if len(men) > 250:
             print "============= Error enviando mensaje ========== \n okeyko.enviar: mas de 250 caracteres \n" + para
             return False, "Mensaje con mas de 250 caracteres"
-        #url = "/nv02/ajax.php"
-        url = "/v2/ajax.php"
-        params =  urllib.urlencode({'para': para, 'mensaje': men}) 
+        url = "http://www.okeyko.com/v2/ajax.php"
+        params =  {'para': para, 'mensaje': men}
         resp = self.pagina(url, params)
         if resp.find("<b>Warning</b>:") > 0:
             print "============= Error enviando mensaje ========== \n okeyko.enviar: \n" + resp
@@ -553,12 +527,11 @@ class okeyko:
         if len(men) > 70:
             print "============= Error enviando mensaje ========== \n okeyko.enviar: mas de 250 caracteres \n" + para
             return False, "SMS con mas de 70 caracteres"
-        #url = "/nv02/SMS.php"
-        url = "/v2/SMS.php"
+        url = "http://www.okeyko.com/v2/SMS.php"
         cel = para[0]
         cel2 = para[1]
-        params =  urllib.urlencode({'cel': cel, 'cel2': cel2, 'mensaje': men,
-                                    'security_code': captcha, 'Enviar':'Enviar'}) 
+        params =  {'cel': cel, 'cel2': cel2, 'mensaje': men,
+                   'security_code': captcha, 'Enviar':'Enviar' }
         resp = self.pagina(url, params)
         self.getCaptcha()
         if resp.find("seguridad incorrecto") > 0:
@@ -582,9 +555,8 @@ class okeyko:
             estado = unicode(estado, 'iso-8859-1').encode('iso-8859-1')
         except:
             print "Exception in estadoSet while correcting Encoding"
-        #url = "/nv02/estadoajax.php"
-        url = "/v2/estadoajax.php"
-        params =  urllib.urlencode({'estado': estado}) 
+        url = "http://www.okeyko.com/v2/estadoajax.php"
+        params = {'estado': estado}
         resp = self.pagina(url, params)
         print "============ Estado cambiado =========="
         return True, "Estado cambiado"
@@ -592,8 +564,7 @@ class okeyko:
     def agenda_lista(self, oname=False, redown=False):
         if self.__conectado != True: return
         if (self.__agenda_lista == None) | ( redown != False):
-            #url = "/nv02/agenda/listado.php"
-            url = "/v2/agenda/listado.php"
+            url = "http://www.okeyko.com/v2/agenda/listado.php"
             resp = self.pagina(url).replace(" bgcolor='#DFDFDF'", "")
             agdict =  {"{usuario}":"(.*?)", "{nombre}":"(.*?)","{id}":"(.*?)"}
             template = """<tr><td><div align='center'><a href='../oky_agenda.php?agenda=@{usuario}'>@{bla}</a></div></td><td><div align='center'>{nombre}</div></td> <td><div align='center'><a href='eliminar.php?ok_id={id}'><img src='../images/iconos_mensajes/eliminar2.png' border='0' title='Eliminar'/></a><a href='black.php?ok_id={bla}<img src='../images/iconos_mensajes/bloqueo.png'  /></a>"""
@@ -606,12 +577,9 @@ class okeyko:
         return self.__agenda_lista
 
     def agendaAdd(self, nom, desc):
-        #url = "/nv02/agenda/index.php"
-        url = "/v2/agenda/index.php"
-        params =  urllib.urlencode({'nombre_agenda': nom,
-                                    'descripcion_agenda': desc,
-                                    'action': 'checkdata',
-                                    'Submit': 'Agendar'})
+        url = "http://www.okeyko.com/v2/agenda/index.php"
+        params =  {'nombre_agenda': nom, 'descripcion_agenda': desc,
+                   'action': 'checkdata', 'Submit': 'Agendar' }
         pag = self.pagina(url, params)
         self.agenda_lista(redown=True)
         if pag.find('Ojo Ojo!!') != -1:
@@ -620,33 +588,37 @@ class okeyko:
 
     def agendaDel(self, agId):
         #http://www.okeyko.com/nv02/agenda/eliminar.php?ok_id=
-        #url = "/nv02/agenda/eliminar.php?ok_id=%s" % agId
-        url = "/v2/agenda/eliminar.php?ok_id=%s" % agId
+        url = "http://www.okeyko.com/v2/agenda/eliminar.php?ok_id=%s" % agId
         self.pagina(url)
         removeListInList(self.__agenda_lista, agId)
 
     def agendaBlock(self, agId):
         #http://www.okeyko.com/nv02/agenda/black.php?ok_id=
-        #url = "/nv02/agenda/black.php?ok_id=%s" % agId
-        url = "/v2/agenda/black.php?ok_id=%s" % agId
+        url = "http://www.okeyko.com/v2/agenda/black.php?ok_id=%s" % agId
         self.pagina(url)
 
     def inbox_bor(self, menid):
+        elimina = {'Submit': 'Eliminar Seleccion'}
         if (type(menid) == tuple) | (type(menid) == list):
-            menid = "&elimina[]=".join(menid)
-        elimina = "?Submit=Eliminar+Seleccion&elimina[]=%s" % menid
-        #url = "/nv02/eliminar_sms.php"
-        url = "/v2/eliminar_sms.php"
+            for a in range(0, len(menid)):
+                elimina.update({'elimina[%s]' % a : menid[a]})
+        #if (type(menid) == tuple) | (type(menid) == list):
+        #    menid = "&elimina[]=".join(menid)
+        #elimina = "?Submit=Eliminar+Seleccion&elimina[]=%s" % menid
+        url = "http://www.okeyko.com/v2/eliminar_sms.php"
         self.pagina(url, elimina)
         removeListInList(self.__inbox, menid)
         return
         
     def outbox_bor(self, menid):
+        elimina = {'Submit': 'Eliminar Seleccion'}
         if (type(menid) == tuple) | (type(menid) == list):
-            menid = "&elimina[]=".join(menid)
-        elimina = "?Submit=Eliminar+Seleccion&eliminae[]=%s" % menid
-        #url = "/nv02/eliminar_sms_enviados.php"
-        url = "/v2/eliminar_sms_enviados.php"
+            for a in range(0, len(menid)):
+                elimina.update({'elimina[%s]' % a : menid[a]})
+        #if (type(menid) == tuple) | (type(menid) == list):
+        #    menid = "&elimina[]=".join(menid)
+        #elimina = "?Submit=Eliminar+Seleccion&eliminae[]=%s" % menid
+        url = "http://www.okeyko.com/v2/eliminar_sms_enviados.php"
         self.pagina(url, elimina)
         removeListInList(self.__outbox, menid)
         self.__outboxBor = True
@@ -678,23 +650,26 @@ class okeyko:
         
     def avatar(self,link,size='g'):
         if (size != 'g') & (size != 'm'): size = 'g'
-        link = "/upload/imagenes/galeria/%s/%s" % (size, link)
+        link = "http://www.okeyko.com/upload/imagenes/galeria/%s/%s" % (size, link)
         pag = self.pagina(link)
         return pag
 
-    def pagina(self,link,post=None):
+    def changeAvatar(self, path):
+        url = "http://www.okeyko.com/v2/upload_img/upload.php"
+        params = {'Submit': "       Upload        ", 'file': open(path,'rb')}
+        resp = self.pagina(url, post=params)
+        return resp
+
+    def pagina(self, link, post=None, get=None):
         #if self.__conectado != True: return
-        clength = False if (post == None) else True
-        link = "/%s" % link if ( link[0] != "/" ) else link
-        #resp = download(self.__dom, link, post, False, self.__cookie)
-        resp = download(self.__dom, link, post, True, self.__cookie, True, clength)
+        resp = self.__download.open(link, post, get)
         ret = resp.read()
         resp.close()
         return ret
 
     def disconnect(self):
         self.__conectado = False
-        self.__cookie = None
+        self.__download = urldownload()
         self.__usuario = None
         self.__contra = None
         self.__agenda_lista = None
