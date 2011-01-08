@@ -1,8 +1,9 @@
-#import gtk
 import time
 import paths
 import Queue
 import threading
+from urllib2 import URLError, HTTPError #Handling exceptions
+import HTTPResponses #Handling exceptions
 
 #import inspect
 #import ctypes
@@ -89,6 +90,12 @@ class ThreadHandler():
         ''' Connects de actions: newInbox newPensamiento newOutbox'''
         self.threadDict['ActMen'].connect(action, callback)
 
+    def Connect(self, action, callback):
+        ''' Connects de actions: newInbox newPensamiento newOutbox'''
+        if action == 'setError':
+            self.threadDict['ActMen'].connect(action, callback)
+            self.threadDict['Server'].connect(action, callback)
+
     def createActMen(self):
         actmenThread = actmen(self.__Control)
         #actmenThread.setgui(self.__MainWindow, self.__Notifications)
@@ -159,8 +166,13 @@ class server(threading.Thread):
         threading.Thread.__init__(self)
         self.colaIn = colaIn
         self.colaOut = colaOut
+        self.errorCB = lambda *x, **y: 1
         self.setDaemon(True)
         self.start()
+
+    def connect(self, action, callback):
+        if action == 'setError':
+            self.errorCb = callback
 
     def run(self):
         while True:
@@ -169,6 +181,27 @@ class server(threading.Thread):
                 #print 'serv.ejecutando', method.__name__, 'con', args, kwargs
                 try: #Evoids server crashing
                     resultado = method(*args, **kwargs)
+                    if cargs:
+                        resul = [resultado]
+                        for arg in cargs:
+                            resul.append(arg)
+                        resultado = tuple(resul)
+                    else:
+                        resultado = (resultado,)
+                    if not ckwargs:
+                        ckwargs = {}
+                    self.colaOut.put((callback, resultado, ckwargs))                    
+                except HTTPError, e:
+                    print 'The server couldn\'t fulfill the request.'
+                    print 'Error code: ', e.code
+                    resp = HTTPResponses.responses[e.code]
+                    error = "%s : %s \n %s" % (e.code, resp[0], resp[1])
+                    print error
+                    self.errorCB(error)
+                except URLError, e:
+                    print 'We failed to reach a server.'
+                    print 'Reason: ', e.reason
+                    self.errorCB(e.reason)
                 except Exception, exception:
                     print 'Exception in Server file OkeThreads.py line 176:'
                     print "    'resultado = method(*args, **kwargs)'"
@@ -193,54 +226,25 @@ class server(threading.Thread):
                         print "    'ckwargs'", ckwargs
                     except:
                         print "    'ckwargs' not setted"
-                    resultado = None
-                cb = True
             except Queue.Empty:
-                resultado = None
-                cb = False
-            if cb:
-                if cargs:
-                    resul = [resultado]
-                    for arg in cargs:
-                        resul.append(arg)
-                    resultado = tuple(resul)
-                else:
-                    resultado = (resultado,)
-                if not ckwargs:
-                    ckwargs = {}
-                self.colaOut.put((callback, resultado, ckwargs))                
-                #if (cargs) and (ckwargs):
-                #    self.colaOut.put((callback, (resultado, cargs,), ckwargs))
-                #elif ckwargs:
-                #    self.colaOut.put((callback, (resultado,), ckwargs))
-                #elif cargs:
-                #    self.colaOut.put((callback, (resultado, cargs), {}))
-                #else:
-                #    self.colaOut.put((callback, (resultado,), {}))
-            time.sleep(1)
+                time.sleep(1)
 
 
 
 class actmen(threading.Thread):
     ''' Thread que actualiza los mensajes y avisa si hay nuevos '''
     def __init__(self, Control):
-    #def __init__(self, ventana, okeyko, cola, sound=None, notification=None, condition=None):
-        '''
-        okeyko = Funcion de libokeyko (creada y conectada)
-        condition = Condicion que se activa al conectarse
-        sound = Funcion para alerta de sonido
-        notificaciones = Funcion para notificaciones OSD
-        '''
+        ''' Control, diccionario. actmen requiere solo de Okeyko y queueToGui'''
         threading.Thread.__init__(self)
         self.__Control = Control
         self.__Cola = Control['queueToGui']
         self.__Okeyko = Control['Okeyko']
-        #self.__Condition = condition
         self.__Condition = None
-        self.__Sound = Control['Sound']
-        self.__Config = Control['Config']
+        #self.__Sound = Control['Sound']
+        #self.__Config = Control['Config']
         self.__MinId = None
         self.loop = True
+        self.errorCB = lambda *x, **y: 1
         self.setInCB = lambda *x, **y: 1
         self.setPenCB = lambda *x, **y: 1
         self.setOutCB = lambda *x, **y: 1
@@ -283,8 +287,9 @@ class actmen(threading.Thread):
         threading.Thread(target=self.join)
 
     def connect(self, action, callback):
-
-        if action == 'setInbox':
+        if action == 'setError':
+            self.errorCb = callback
+        elif action == 'setInbox':
             self.setInCB = callback
         elif action == 'setPensamiento':
             self.setPenCB = callback
@@ -298,13 +303,24 @@ class actmen(threading.Thread):
             self.newPenCB = callback
         elif action == 'newOutbox':
             self.newOutCB = callback
-        
 
     def run(self):
-        #if self.__Condition != None:
-        #    self.__Condition.acquire()
-        #    self.__Condition.wait()
-        #    self.__Condition.release()
+        try:
+            realRun()
+        except HTTPError, e:
+            print 'The server couldn\'t fulfill the request.'
+            print 'Error code: ', e.code
+            resp = HTTPResponses.responses[e.code]
+            error = "%s : %s \n %s" % (e.code, resp[0], resp[1])
+            print error
+            self.errorCB(error)
+        except URLError, e:
+            print 'We failed to reach a server.'
+            print 'Reason: ', e.reason
+            self.errorCB(e.reason)
+
+    
+    def realRun(self):
         self.__Config.setCurrentUser(self.__Okeyko.getUser())
 
         inbox = self.__Okeyko.inbox()[:]
@@ -318,28 +334,24 @@ class actmen(threading.Thread):
         iterDownAvatar(inbox, self.__Config.avatarLoad, self.__Okeyko.avatar,\
                         self.__Config.avatarSave)
 
-        #self.__Cola.put((self.__MainWindow.set_inbox, [inbox], {}))
         self.__Cola.put((self.setInCB, [inbox], {}))
 
         outbox = self.__Okeyko.outbox()
         iterDownAvatar(outbox, self.__Config.avatarLoad, self.__Okeyko.avatar,\
                         self.__Config.avatarSave)
 
-        #self.__Cola.put((self.__MainWindow.set_outbox, [outbox], {}))
         self.__Cola.put((self.setOutCB, [outbox], {}))
 
         favbox = self.__Okeyko.favbox()
         iterDownAvatar(favbox, self.__Config.avatarLoad, self.__Okeyko.avatar,\
                         self.__Config.avatarSave)
 
-        #self.__Cola.put((self.__MainWindow.set_fav, [favbox], {}))
         self.__Cola.put((self.setFavCB, [favbox], {}))
 
         pensamientos = self.__Okeyko.pensamientos()
         iterDownAvatar(pensamientos, self.__Config.avatarLoad, self.__Okeyko.avatar,\
                         self.__Config.avatarSave)
 
-        #self.__Cola.put((self.__MainWindow.set_pen, [pensamientos], {}))
         self.__Cola.put((self.setPenCB, [pensamientos], {}))
 
         while self.loop:
@@ -353,29 +365,15 @@ class actmen(threading.Thread):
                     self.__MinId = mensajes[0][3]
                     iterDownAvatar(mensajes, self.__Config.avatarLoad,\
                         self.__Okeyko.avatar, self.__Config.avatarSave)
-                    #self.__Cola.put((self.__MainWindow.new_inbox, [mensajes], {}))
                     self.__Cola.put((self.newInCB, [mensajes], {}))
-                    #if self.__Sound != None:
-                    #    self.__Cola.put((self.__Sound.recibido, (), {}))
-                    #self.__MainWindow.blink()
-                    #if self.__Notifications != None:
-                    #    self.__Cola.put((self.__Notifications.mensajeNew,(),{}))
-                       #notificaciones.newNotification("Mensaje Nuevo", 0, 1, color=col)
             if self.loop:
-                outbox, pensamientos = self.__Okeyko.newOutPen()
-                if outbox != False and self.loop:
-                    iterDownAvatar(outbox, self.__Config.avatarLoad,\
-                        self.__Okeyko.avatar, self.__Config.avatarSave)
-                    #self.__Cola.put((self.__MainWindow.new_outbox, [outbox], {}))
-                    self.__Cola.put((self.newOutCB, [outbox], {}))
-            
-            if pensamientos != False and self.loop:
-                iterDownAvatar(pensamientos, self.__Config.avatarLoad,\
-                    self.__Okeyko.avatar, self.__Config.avatarSave)
-                self.__Cola.put((self.newPenCB, [pensamientos], {}))
-                #self.__Cola.put((self.__MainWindow.new_pen, [pensamientos], {}))
-                #if self.__Sound != None:
-                #    self.__Cola.put((self.__Sound.pensamiento, (), {}))
-                #if self.__Notifications != None:
-                #    self.__Cola.put((self.__Notifications.pensamientoNew,
-                #                         (),{} ))
+                if self.__Okeyko.inboxNew() == False: #TODO: HACK: prevenir poner mensajes nuevos como leidos
+                    outbox, pensamientos = self.__Okeyko.newOutPen()
+                    if outbox != False and self.loop:
+                        iterDownAvatar(outbox, self.__Config.avatarLoad,\
+                            self.__Okeyko.avatar, self.__Config.avatarSave)
+                        self.__Cola.put((self.newOutCB, [outbox], {}))            
+                    if pensamientos != False and self.loop:
+                        iterDownAvatar(pensamientos, self.__Config.avatarLoad,\
+                            self.__Okeyko.avatar, self.__Config.avatarSave)
+                    self.__Cola.put((self.newPenCB, [pensamientos], {}))

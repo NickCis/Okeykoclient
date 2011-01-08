@@ -668,16 +668,24 @@ class okeyko:
         return ret
 
     def disconnect(self):
-        self.__conectado = False
         self.__download = urldownload()
+        self.__conectado = False
         self.__usuario = None
         self.__contra = None
         self.__agenda_lista = None
         self.__inbox = False
         self.__outbox = False
         self.__outboxPag = False
+        self.__outboxBor = False
+        self.__favbox = False
+        self.__favPag = False
+        self.__favBor = False
         self.__avatar = False
+        self.__avatarLink = None
         self.__estado = False
+        self.__captcha = None
+        self.__envio = False
+        self.__pensamientos = None
              
 
 if __name__ == "__main__":
