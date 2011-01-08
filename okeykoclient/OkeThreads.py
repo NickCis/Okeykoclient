@@ -241,7 +241,7 @@ class actmen(threading.Thread):
         self.__Okeyko = Control['Okeyko']
         self.__Condition = None
         #self.__Sound = Control['Sound']
-        #self.__Config = Control['Config']
+        self.__Config = Control['Config']
         self.__MinId = None
         self.loop = True
         self.errorCB = lambda *x, **y: 1
@@ -306,7 +306,7 @@ class actmen(threading.Thread):
 
     def run(self):
         try:
-            realRun()
+            self.realRun()
         except HTTPError, e:
             print 'The server couldn\'t fulfill the request.'
             print 'Error code: ', e.code
@@ -376,4 +376,4 @@ class actmen(threading.Thread):
                     if pensamientos != False and self.loop:
                         iterDownAvatar(pensamientos, self.__Config.avatarLoad,\
                             self.__Okeyko.avatar, self.__Config.avatarSave)
-                    self.__Cola.put((self.newPenCB, [pensamientos], {}))
+                        self.__Cola.put((self.newPenCB, [pensamientos], {}))
