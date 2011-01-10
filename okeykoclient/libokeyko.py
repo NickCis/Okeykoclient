@@ -4,7 +4,7 @@ import cookielib
 import htmlentitydefs
 import MultipartPostHandler
 from urllib import urlencode
-from BeautifulSoup import BeautifulSoup
+from pyquery import PyQuery as pq
 
 class urldownload:
     def __init__(self):
@@ -70,9 +70,6 @@ def unescape(text):
       return text # leave as is
    return re.sub("&#?\w+;", fixup, text)
 
-def BS(html):
-    return BeautifulSoup(unescape(html), convertEntities=BeautifulSoup.HTML_ENTITIES)
-
 def removeListInList(lsts, x):
     for lst in lsts:
         try:
@@ -122,10 +119,10 @@ class okeyko:
         pag = self.pagina(url, post=params)
         if pag.find("Password o Usuario incorrecto") != -1: #Ok2.0
             self.__conectado = False
-            self.__conectado_result = BS(pag).text #Ok2.0
+            self.__conectado_result = pq(pag).text() #Ok2.0
             return
         self.__conectado = True if (pag.find("exitosamente")) else False #Ok2.0
-        self.__conectado_result = BS(pag).text #Ok2.0
+        self.__conectado_result = pq(pag).text() #Ok2.0
         print self.__conectado_result
         return
 
@@ -140,16 +137,15 @@ class okeyko:
         ''' Obtiene: inbox, outbox, avatar, estado'''
         if self.__conectado != True: return
         url = "http://www.okeyko.com/v2/boceto.php"
-        #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
-        pag = BS(unicode(self.pagina(url), 'latin-1'))
-        avt = pag.find('img',{'title':'Usuario', 'class':'reflect rheight20'})['src']
+        pag = pq(unicode(self.pagina(url), 'latin-1'))
+        avt = pag("img[title='Usuario']").attr('src')
         self.__avatarLink = avt[avt.rfind('/')+1:]
         self.__avatar = self.avatar(self.__avatarLink,'g')
         try:
-            self.__estado = pag.find('b',{'style':'color:#FFF;'}).text
+            self.__estado = pag("b[style='color:#FFF;']").text()
             self.__estado = self.__estado.encode('iso-8859-1')
         except:
-            self.__estado = ""        
+            self.__estado = ""
         self.__inbox = self.__getInbox(pag)
         self.__outboxPag = 1
         self.__outbox = self.__getOutbox(pag)
@@ -171,7 +167,8 @@ class okeyko:
         params = {'lastmsg': str(lastOId)}
         url = "http://www.okeyko.com/v2/0ajax_more.php"
         #pag = BS(unescape(unicode(self.pagina(url,params), 'latin-1')))
-        pag = BS(unicode(self.pagina(url, post=params), 'latin-1'))
+        #pag = BS(unicode(self.pagina(url, post=params), 'latin-1'))
+        pag = pq(unicode(self.pagina(url, post=params), 'latin-1'))
         Ins = self.__getInbox(pag)
         for i in Ins:
             self.__inbox.append(i)
@@ -185,7 +182,8 @@ class okeyko:
             self.__outboxBor = False
         url = "http://www.okeyko.com/v2/boceto.php?paginae=%s" % self.__outboxPag
         #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
-        pag = BS(unicode(self.pagina(url), 'latin-1'))
+        #pag = BS(unicode(self.pagina(url), 'latin-1'))
+        pag = pq(unicode(self.pagina(url), 'latin-1'))
         Outs = self.__getOutbox(pag)
         lastOutId = int(self.__outbox[-1][3])
         ret = []
@@ -210,7 +208,8 @@ class okeyko:
             self.__favBor = False
         url = "http://www.okeyko.com/v2/boceto.php?pagina=%s" % self.__favPag
         #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
-        pag = BS(unicode(self.pagina(url), 'latin-1'))
+        #pag = BS(unicode(self.pagina(url), 'latin-1'))
+        pag = pq(unicode(self.pagina(url), 'latin-1'))
         Favs = self.__getFavs(pag)
         lastFavId = int(self.__favbox[-1][3])
         ret = []
@@ -227,43 +226,46 @@ class okeyko:
                     ret.append(f)
         return ret
             
-    def __getInbox(self, BShtml):
-        lis = BShtml.findAll('li')
+    def __getInbox(self, pqHtml):
         menInbox = []
-        for i in range(0, len(lis) - 4 ):
-            li = lis[i + 4]
-            de = li.findAll('a')[1].string
-            hora = li.find('td',{'align':'right'}).text
-            mensaje = li.findAll('br')[5].next
-            Oik = li.label['for']
-            avatar = li.img['src'][li.img['src'].rfind('/')+1:]
-            leido = li.findAll('div',{'style': ' font-size:11px; color:#666;' \
-                    })[0].contents[0]
+        li = pqHtml("li:eq(4)")
+
+        while str(li) != '':
+            de = li('a:eq(1)').text()
+            hora = li("td[align='right']:first").text()
+            mensaje = li.text()
+            mensaje = mensaje[mensaje.find('</h2>')+5:mensaje.find('Leido desde')].strip()
+            if mensaje.find('Agregar a Chat (IMok) -->') != -1:
+                mensaje = mensaje[mensaje.find('Agregar a Chat (IMok) -->')+26:]
+            Oik = li('label').attr('for')
+            avatar = li('img:first').attr('src')
+            avatar = avatar[avatar.rfind('/')+1:]
+            leido = li("div[style=' font-size:11px; color:#666;']").text()
             if leido.find('MOVIL') != -1:
                 leido = 1
             elif leido.find('PC') != -1:
                 leido = 2
             else:
                 leido = 0
-            favImg = li.find('img', {'src': 'images/iconos_mensajes/favoritos2.png'})
-            favHref = favImg.parent['href']
-            #fav = favHref[favHref.rfind('=')+1:]
+            favHref = li("img[src='images/iconos_mensajes/favoritos2.png']").parent().attr('href')
             fav = favHref[favHref.rfind('&')+1:]
             menInbox.append([de, hora, mensaje, Oik, avatar, leido, fav])
+            li = li.next()
         return menInbox
 
-    def __getOutbox(self, BShtml):
-        outTab = BShtml.find('div',{'id':'tab2'})
-        outs = outTab.findAll('div',{'class':'conten_mensaje'})
+    def __getOutbox(self, pqHtml):
         menOutbox = []
-        for out in outs:
-            mensaje = out.find('div', {'id':'cuerpo_mensaje'}).text
-            ph = out.find('div',{'id':'mensaje_head'}).text
-            para = ph[ph.find('">')+2:ph.find('|')]
+        outs = pqHtml("#tab2 div.conten_mensaje")
+        osum = 0
+        out = outs.eq(osum)
+        while str(out) != '':
+            mensaje = out("div#cuerpo_mensaje").text()
+            ph = out("div#mensaje_head").text()
+            para = ph[ph.rfind('@'):ph.find('|')-1]
             hora = ph[ph.find('|')+1:ph.rfind('|')]
-            Oid = out.find('div',{'id':'herramientas'}).input['value']
+            Oid = out("div#herramientas input").attr('value')
             avatar = self.__avatarLink #TODO: Get avatar
-            leido = out.find('div',{'id':'herramientas'}).text
+            leido = out("div#herramientas").text()
             if leido.find('MOVIL') != -1:
                 leido = 1
             elif leido.find('PC') != -1:
@@ -271,53 +273,60 @@ class okeyko:
             else:
                 leido = 0
             menOutbox.append([para, hora, mensaje, Oid, avatar, leido]) 
+            osum += 1
+            out = outs.eq(osum)
         return menOutbox   
 
-    def __getFavs(self, BShtml):
-        favsTab = BShtml.find('div',{'id':'tab3'})
-        if favsTab.text.find('No tiene mensajes') != -1:
-            return False
-        favs = favsTab.findAll('div',{'class':'conten_mensaje'})
+    def __getFavs(self, pqHtml):
         menFav = []
-        for fav in favs:
-            mensaje = fav.find('div', {'id':'cuerpo_mensaje'}).text
-            ph = fav.find('div',{'id':'mensaje_head'}).text
+        favsTab = pqHtml('div#tab3')
+        if favsTab.text().find('No tiene mensajes') != -1:
+            return False
+        favDs = favsTab("div.conten_mensaje")
+        favsum = 0
+        favD = favDs.eq(favsum)
+        while str(favD) != '':
+            mensaje = favD("div#cuerpo_mensaje").text()
+            ph = favD("div#mensaje_head").text()
             para = ph[ph.find('">')+2:ph.find('|')]
             hora = ph[ph.find('|')+1:ph.rfind('|')]
-            Oid = fav.find('div',{'id':'herramientas'}).input['value']
-            avatarSrc = fav.find('img')['src']
+            Oid = favD("div#herramientas input").attr('value')
+            avatarSrc = favD('img:first').attr('src')
             avatar = avatarSrc[avatarSrc.rfind('/')+1:]
-            leido = fav.find('div',{'id':'herramientas'}).text
+            leido = favD("div#herramientas").text()
             if leido.find('MOVIL') != -1:
                 leido = 1
             elif leido.find('PC') != -1:
                 leido = 2
             else:
                 leido = 0
-            favImg = fav.find('img', {'src': 'images/iconos_mensajes/favoritos2.png'})
-            favHref = favImg.parent['href']
-            #fav = favHref[favHref.rfind('=')+1:]
+            favHref = favD("img[src='images/iconos_mensajes/favoritos2.png']").parent().attr('href')
             fav = favHref[favHref.rfind('&')+1:]
-            menFav.append([para, hora, mensaje, Oid, avatar, leido, fav]) 
+            menFav.append([para, hora, mensaje, Oid, avatar, leido, fav])
+            favsum += 1
+            favD = favDs.eq(favsum)
         return menFav
 
-    def __getPensamientos(self, BShtml):
-        penTab = BShtml.find('div',{'id':'tab4'})
-        pens = penTab.findAll('table')
+    def __getPensamientos(self, pqHtml):
         pensamientos = []
-        for pen in pens:
-            de = pen.findAll('td')[1].text[4:]
-            trs = pen.findAll('tr')
-            mensaje = trs[1].text
+        pens = pqHtml("div#tab4 table")
+        pen = pens.eq(0)
+        penSum = 0        
+        while str(pen) != '':
+            trs = pen('tr td')        
+            de = trs.eq(1).text()[4:]
+            mensaje = trs.eq(2).text()
             try: # Corregir Codificacion
                 mensaje = mensaje.encode('iso-8859-1')
             except:
                 print "Exception in __getPensamientos while codification correction"
-            hora = trs[2].text
+            hora = trs.eq(3).text()
             Oid = 'a'
-            avatar = pen.find('img')['src']
+            avatar = pen('img:first').attr('src')
             avatar = avatar[avatar.rfind('/')+1:]
-            pensamientos.append([de, hora, mensaje, Oid, avatar]) 
+            pensamientos.append([de, hora, mensaje, Oid, avatar])
+            penSum += 1
+            pen = pens.eq(penSum)
         return pensamientos
 
     def userinfo(self):
@@ -347,7 +356,8 @@ class okeyko:
         if pag == "</form >":
             return False
         #pag = BS(unescape(unicode(pag, 'latin-1')))
-        pag = BS(unicode(pag, 'latin-1'))
+        #pag = BS(unicode(pag, 'latin-1'))
+        pag = pq(unicode(pag, 'latin-1'))
         tables = pag.findAll('table')
         tablesN = len(tables) / 3
         inboxNew = []
@@ -393,7 +403,8 @@ class okeyko:
             self.__envio = False
         if pag == None:
             url = "http://www.okeyko.com/v2/boceto.php"
-            pag = BS(unicode(self.pagina(url), 'latin-1'))
+            #pag = BS(unicode(self.pagina(url), 'latin-1'))
+            pag = pq(unicode(self.pagina(url), 'latin-1'))
         Outs = self.__getOutbox(pag)
         firstOutId = int(self.__outbox[0][3])
         ret = []
@@ -422,7 +433,8 @@ class okeyko:
         if self.__conectado != True: return
         url = "http://www.okeyko.com/v2/boceto.php"
         #pag = BS(unescape(unicode(self.pagina(url), 'latin-1')))
-        pag = BS(unicode(self.pagina(url), 'latin-1'))
+        #pag = BS(unicode(self.pagina(url), 'latin-1'))
+        pag = pq(unicode(self.pagina(url), 'latin-1'))
         self.__favPag = 1
         self.__favbox = self.__getFavs(pag)
         return self.favbox()
@@ -439,7 +451,8 @@ class okeyko:
         Formato: [de, hora, mensaje, Oik, avatar] devuelve false si no hay ninguno'''
         if self.__conectado != True: return
         url = "http://www.okeyko.com/v2/boceto.php"
-        pag = BS(unicode(self.pagina(url), 'latin-1'))
+        #pag = BS(unicode(self.pagina(url), 'latin-1'))
+        pag = pq(unicode(self.pagina(url), 'latin-1'))
         self.__pensamientos = self.__getPensamientos(pag)
         return self.pensamientos()
 
@@ -448,7 +461,8 @@ class okeyko:
         if self.__conectado != True: return
         if pag == None:
             url = "http://www.okeyko.com/v2/boceto.php"
-            pag = BS(unicode(self.pagina(url), 'latin-1'))
+            #pag = BS(unicode(self.pagina(url), 'latin-1'))
+            pag = pq(unicode(self.pagina(url), 'latin-1'))
         Pens = self.__getPensamientos(pag)
         firstPenDate = self.__pensamientos[0][1]
         ret = []
@@ -470,7 +484,8 @@ class okeyko:
         '''Binding para outboxNew y pensamientosNew para hacer una sola desgarga
            de la pagina. Devuelve: [outbouxNew] [pensamientosNew]'''
         url = "http://www.okeyko.com/v2/boceto.php"
-        pag = BS(unicode(self.pagina(url), 'latin-1'))
+        #pag = BS(unicode(self.pagina(url), 'latin-1'))
+        pag = pq(unicode(self.pagina(url), 'latin-1'))
         return self.outboxNew(pag), self.pensamientosNew(pag)
 
     def set_leido(self, ok_id):
