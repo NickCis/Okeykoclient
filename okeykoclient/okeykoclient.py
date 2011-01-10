@@ -24,12 +24,13 @@ def main():
     #Control = { 'queueToGui' : queueToGui, 'queueToServer' : queueToServer, \
     #            'Okeyko' : Okeyko, 'Config' : Conf, 'Sound' : Sonido, \
     #            'queueManager' : queueManager}
+    desktop.override = Conf.glob['overrideDesktop']
     Control = { 'queueToGui' : ThreadHandler.queueToGui,
                 'queueToServer' : ThreadHandler.queueToServer, 
                 'Okeyko' : Okeyko, 'Config' : Conf, 'Sound' : Sonido, 
                 'queueManager' : queueManager, 'ThreadHandler' : ThreadHandler,
                 'desktop' : desktop}
-    ThreadHandler.setControl(Control)
+    ThreadHandler.setControl(Control)    
     #ActMen = OkeThreads.actmen(Control)
     #Control.update({'ActMen':ActMen})
     gtkui.gtk_main(Control)

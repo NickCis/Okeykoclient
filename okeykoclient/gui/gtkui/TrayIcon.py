@@ -48,7 +48,8 @@ class TrayIcon:
     def __init__(self,Control):
         '''Constructor'''
         global disabled
-        self.disabled = disabled
+        if not disabled:
+            self.disabled = disabled = Control['Config'].glob['disableTrayIcon']
         
         self.__Control = Control
         #self.controller = controller
@@ -60,9 +61,6 @@ class TrayIcon:
         #self.status = ''
         self.tray = None
         self.ind = None
-
-        #disabled = self.config.glob['disableTrayIcon']
-        disabled = False
 
         try:
             if disabled:

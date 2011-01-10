@@ -21,7 +21,8 @@ THEME_SOUND_FILES = [ 'enviar.wav',
                       'recibido.wav' ]
 
 THEME_NOT_FILES = [ 'bor.png',
-                    'guif.png' ]
+                    'guif.png',
+                    'back.png' ]
 
 THEME_THEME_FILES = [ 'ag.png',
                       'bor.png',
@@ -66,6 +67,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'rememberMyPassword': False,
     'lastLoggedAccount': 'Nadie',
     'disableTrayIcon': False,
+    'notCanPyNotify': False,
     'overrideDesktop': ''
 }
 
@@ -91,8 +93,7 @@ DEFAULT_USER_CONFIG = {
     'notOffset': '1',
     'notHeight': 128,
     'notWidth': 200,
-    'notCanPyNotify': False,
-    'notPyNotify': False,
+    'notType': '0',
     'enableNot': True,
     'tabR': True,
     'tabE': True,
@@ -469,7 +470,8 @@ class ConfigDict(dict):
                 self.store[key] = str(value)
 
     def __repr__(self):
-        return '<ConfigDict based on ' + repr(store) + '>'
+        #return '<ConfigDict based on ' + repr(store) + '>'
+        return '<ConfigDict based on ' + repr(self.store) + '>'
 
     def getDefault(self, name):
         if name in self.defaults:
@@ -625,7 +627,7 @@ def themePathFile(theme, arc):
     elif os.path.isfile(arcPathS):
         arcPath = arcPathS
     elif os.path.isfile(arcPathD):
-        arcPath = archPathD
+        arcPath = arcPathD
     else:
         arcPath = False
         print "Error in themePathFile: %s %s" % (theme, arc)

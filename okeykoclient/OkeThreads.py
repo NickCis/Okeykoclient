@@ -92,7 +92,7 @@ class ThreadHandler():
 
     def Connect(self, action, callback):
         ''' Connects de actions: newInbox newPensamiento newOutbox'''
-        if action == 'setError':
+        if action == 'setError' or action == 'setConError':
             self.threadDict['ActMen'].connect(action, callback)
             self.threadDict['Server'].connect(action, callback)
 
@@ -167,11 +167,14 @@ class server(threading.Thread):
         self.colaIn = colaIn
         self.colaOut = colaOut
         self.errorCB = lambda *x, **y: 1
+        self.errorConCB = lambda *x, **y: 1
         self.setDaemon(True)
         self.start()
 
     def connect(self, action, callback):
-        if action == 'setError':
+        if action == 'setConError':
+            self.errorConCB = callback
+        elif action == 'setError':
             self.errorCb = callback
 
     def run(self):
@@ -201,7 +204,7 @@ class server(threading.Thread):
                 except URLError, e:
                     print 'We failed to reach a server.'
                     print 'Reason: ', e.reason
-                    self.errorCB(e.reason)
+                    self.errorConCB(e.reason)
                 except Exception, exception:
                     print 'Exception in Server file OkeThreads.py line 176:'
                     print "    'resultado = method(*args, **kwargs)'"
@@ -245,6 +248,7 @@ class actmen(threading.Thread):
         self.__MinId = None
         self.loop = True
         self.errorCB = lambda *x, **y: 1
+        self.errorConCB = lambda *x, **y: 1
         self.setInCB = lambda *x, **y: 1
         self.setPenCB = lambda *x, **y: 1
         self.setOutCB = lambda *x, **y: 1
@@ -287,7 +291,9 @@ class actmen(threading.Thread):
         threading.Thread(target=self.join)
 
     def connect(self, action, callback):
-        if action == 'setError':
+        if action == 'setConError':
+            self.errorConCB = callback
+        elif action == 'setError':
             self.errorCb = callback
         elif action == 'setInbox':
             self.setInCB = callback
@@ -317,7 +323,7 @@ class actmen(threading.Thread):
         except URLError, e:
             print 'We failed to reach a server.'
             print 'Reason: ', e.reason
-            self.errorCB(e.reason)
+            self.errorConCB(e.reason)
 
     
     def realRun(self):

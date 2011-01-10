@@ -84,7 +84,10 @@ class mainWindow(gtk.Window):
         #self.mainWindow.set_size_request(200, 100)
         #self.set_default_size(300, 700)
         self.parse_geometry(self.__Config.glob['mainWindowGeometry'])
-        self.connect("delete_event", self.showHide)
+        if self.__Config.glob['disableTrayIcon']:
+            self.connect("delete_event", self.askExit)
+        else:
+            self.connect("delete_event", self.showHide)
         self.set_title("Okeyko ::: Cliente")
         self.LoginWin()
 
@@ -96,6 +99,8 @@ class mainWindow(gtk.Window):
             self.remove(self.child)
 
         LoginWin = LoginWindow.LoginWindow(self.__Control)
+        LoginWin.connect('aboutOpen', lambda *x: About.AboutOkeyko(self.__Config).run())
+        LoginWin.connect('openLink', lambda *x: self.__Control['desktop'].open(x[1]))
         LoginWin.connect('connected', redraw)
         self.add(LoginWin)
         self.show_all()
@@ -113,7 +118,7 @@ class mainWindow(gtk.Window):
             
         def aboutClient(*args): #TODO
             about = About.AboutOkeyko(self.__Config)
-            about.show()
+            about.run()
 
         def SettingsWin(*args):
             ST = SettingsWindow.SettingsWindow(self.__Control, self)
@@ -1202,6 +1207,25 @@ class mainWindow(gtk.Window):
         else:
             self.deiconify()
             self.show()
+        return True
+
+    def askExit(self, widget=None, *args):
+        '''Ask About closing when tray disabled'''
+        askDialog = gtk.Dialog("Desea Salir de OkeykoClient?",
+                     self,
+                     gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+                     (gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT,
+                      gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
+        askLabel = gtk.Label('Desea Cerrar Okeykoclient?')
+        askLabel.show()
+        askImage = gtk.image_new_from_stock(gtk.STOCK_DIALOG_WARNING, gtk.ICON_SIZE_DIALOG)
+        askImage.show()
+        askDialog.vbox.pack_start(askImage)
+        askDialog.vbox.pack_start(askLabel)
+        rta = askDialog.run()
+        if rta == -3:
+            self.__Control['Quit']()
+        askDialog.destroy()
         return True
 
     def disconnect(self, *args, **kargs):

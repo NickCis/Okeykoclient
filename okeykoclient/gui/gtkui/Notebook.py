@@ -10,6 +10,7 @@ class NotebookLabel(gtk.EventBox):
     }
     def __init__(self, textlabel, stockid, size=gtk.ICON_SIZE_MENU):
         gtk.EventBox.__init__(self)
+        self.set_property('visible-window', False)
         #gtk.HBox.__init__(self, False, 0)
         self.HBox = gtk.HBox(False, 0)
 

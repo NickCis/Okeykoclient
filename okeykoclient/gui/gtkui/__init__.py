@@ -76,6 +76,7 @@ def gtk_main(Control):
                 pass
             window.hide()
         if not Tray.disabled:
+            print Tray.disabled
             Tray.remove()
         gtk.main_quit()
         if Control['Okeyko'].conectado()[0]:

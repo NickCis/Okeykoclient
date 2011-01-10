@@ -163,7 +163,7 @@ class pageNot(gtk.VBox):
       themes = list(self.config.themesNot)
 
       self.theme = gtk.combo_box_new_text()
-      labelTheme = gtk.Label('Tema:')
+      labelTheme = gtk.Label('_Tema:')
       labelTheme.set_alignment(0.0, 0.5)
       labelTheme.set_use_underline(True)
       self.values2 = {}
@@ -216,8 +216,16 @@ class pageNot(gtk.VBox):
       frame1.set_border_width(4)
       frame1.add(settings1)
 
-      self.pynotify =  gtk.CheckButton('Usar el PyNotify en vez de las notificaciones en Pantalla (requiere libnotify)')
-      self.pynotify.set_active(self.config.user['notPyNotify'])
+      hboxnotType = gtk.VBox()
+      labelnotType = gtk.Label('Tipo de notificacion:')
+      labelnotType.set_alignment(0.0, 0.5)
+      self.notType = gtk.combo_box_new_text() #FIXME: Use for
+      self.notType.append_text('Emesene Style')
+      self.notType.append_text('Gtk Notifications')
+      self.notType.append_text('PyNotify Notification (require pynotify lib)')
+      self.notType.set_active(int(self.config.user['notType']))
+      hboxnotType.pack_start(labelnotType)
+      hboxnotType.pack_start(self.notType)
 
       tipografia = gtk.HBox()
       
@@ -259,7 +267,7 @@ class pageNot(gtk.VBox):
       desplazamiento.pack_start(self.desplazamientoCombo, True, True, 10)
 
       settings2 = gtk.VBox()
-      settings2.pack_start(self.pynotify)
+      settings2.pack_start(hboxnotType)
       settings2.pack_start(tipografia)
       settings2.pack_start(posicion)
       settings2.pack_start(desplazamiento)
@@ -283,8 +291,8 @@ class pageNot(gtk.VBox):
       font = self.notFont
       color = self.notColor
       theme = self.theme.get_active_text()
-      pynot = self.pynotify.get_active()
-      self.control['Notification'].preview(pos, scroll, font, color, theme, pynot)
+      notType = self.notType.get_active()
+      self.control['Notification'].preview(pos, scroll, font, color, theme, notType)
 
    def savetheme(self, combo):
       active = combo.get_active_text()
@@ -339,7 +347,7 @@ class pageNot(gtk.VBox):
       self.config.user['notFont'] = self.notFont
       self.config.user['notColor'] = self.notColor
 
-      self.config.user['notPyNotify'] = self.pynotify.get_active()
+      self.config.user['notType'] = self.notType.get_active()
 
       self.config.user['enableNot'] = self.enablenot.get_active()
       
