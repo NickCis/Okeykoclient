@@ -42,12 +42,7 @@ class LoginWindow(gtk.VBox):
             self.emit('aboutOpen')
 
         def SettingsWin(*args):
-            d = gtk.Dialog()
-            d.vbox.pack_start(gtk.Label('Proximamente'))
-            d.show_all()
             self.emit('settingsOpen')
-            #ST = SettingsWindow.SettingsWindow(self.__Control, self)
-            #ST.show()    
     
         gtk.VBox.__init__(self, False, 0)
         
@@ -270,8 +265,8 @@ class LoginWindow(gtk.VBox):
         hboxerror.pack_start(imageerror)
         laberror = gtk.Label(error)
         hboxerror.pack_start(laberror)
-        self.errorBox.add(hboxerror)
         hboxerror.show_all()
+        self.errorBox.add(hboxerror)
         self.errorBox.show()        
 
 class gtk_LoginImage(gtk.Image):

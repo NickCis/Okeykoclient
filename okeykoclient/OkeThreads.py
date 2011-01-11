@@ -76,6 +76,7 @@ def iterDownAvatar(store, Load, Down, Save):
 class ThreadHandler():
     def __init__(self):
         self.threadDict = {}
+        self.ActMenConnectDict = {}
         
         self.queueToGui = Queue.Queue()
         self.queueToServer = Queue.Queue()
@@ -88,21 +89,25 @@ class ThreadHandler():
 
     def ActMenConnect(self, action, callback):
         ''' Connects de actions: newInbox newPensamiento newOutbox'''
-        self.threadDict['ActMen'].connect(action, callback)
+        if self.threadDict.has_key('ActMen'):
+            self.threadDict['ActMen'].connect(action, callback)
+        self.ActMenConnectDict.update({action: callback})
 
     def connect(self, action, callback):
         ''' Connects de actions: newInbox newPensamiento newOutbox'''
         if action == 'setError' or action == 'setConError':
-            self.threadDict['ActMen'].connect(action, callback)
             self.threadDict['Server'].connect(action, callback)
+            self.ActMenConnect(action, callback)
 
     def createActMen(self):
         actmenThread = actmen(self.__Control)
         #actmenThread.setgui(self.__MainWindow, self.__Notifications)
         self.threadDict.update({ 'ActMen': actmenThread })
+        for act, call in self.ActMenConnectDict.iteritems():
+            self.ActMenConnect(act, call)
         
     def startActMen(self):
-        self.threadDict['ActMen'].start()
+        self.threadDict['ActMen'].start()         
 
     def kill(self, name):
         if self.threadDict.has_key(name):
@@ -118,12 +123,13 @@ class ThreadHandler():
             return False
 
     def killActMen(self):
-        actmenThread = self.threadDict['ActMen']
-        actmenThread.loop = False
-        #ret = self.kill('ActMen')
-        #self.newThread(self.kill, ('ActMen',) )
-        self.queueToServer.put( (self.kill, ('ActMen',), {}, lambda x: x, (), {} ) )
-        #return ret
+        if self.threadDict.has_key('ActMen'):
+            actmenThread = self.threadDict['ActMen']
+            actmenThread.loop = False
+            #ret = self.kill('ActMen')
+            #self.newThread(self.kill, ('ActMen',) )
+            self.queueToServer.put( (self.kill, ('ActMen',), {}, lambda x: x, (), {} ) )
+            #return ret
 
     def killall(self):
         for threadName, thread in self.threadDict.iteritems():

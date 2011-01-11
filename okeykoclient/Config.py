@@ -68,8 +68,12 @@ DEFAULT_GLOBAL_CONFIG = {
     'lastLoggedAccount': 'Nadie',
     'disableTrayIcon': False,
     'notCanPyNotify': False,
-    'overrideDesktop': ''
-}
+    'overrideDesktop': '',
+    'useProxy': False,
+    'proxyHost': '',
+    'proxyPort': '',
+    'proxyUsername': '',
+    'proxyPassword': '' }
 
 
 DEFAULT_USER_CONFIG = {

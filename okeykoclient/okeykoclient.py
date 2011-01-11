@@ -23,6 +23,9 @@ def main():
     Okeyko = libokeyko.okeyko()
     Conf = Config.Main()
     Conf.writeGlobalConfig()
+    if Conf.glob['useProxy']:
+        Okeyko.setProxy(Conf.glob['proxyHost'], Conf.glob['proxyPort'],
+                Conf.glob['proxyUsername'], Conf.glob['proxyPassword'] )
     Sonido = Sound.SoundHandler(Conf)
     #Control = { 'queueToGui' : queueToGui, 'queueToServer' : queueToServer, \
     #            'Okeyko' : Okeyko, 'Config' : Conf, 'Sound' : Sonido, \

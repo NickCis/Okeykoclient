@@ -7,8 +7,10 @@ from urllib import urlencode
 from pyquery import PyQuery as pq
 
 class urldownload:
-    def __init__(self):
+    def __init__(self, cookies=None):
         self.cookies = cookielib.CookieJar()
+        if cookies != None and type(cookies) == type(self.cookies):
+            self.cookies = cookies        
         self.proxy = None
         self.auth = None
         self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookies),
@@ -16,12 +18,16 @@ class urldownload:
     def open(self, url, post=None, get=None ):
         if get:            
             url = "url?%s" % urlencode(get)
-        return self.opener.open(url, post)
+        return self.opener.open(url, post, 30)
 
     def setProxy(self, proxy, auth=None):
         '''proxy, auth
            ip:port, (user,pass)
            xxx.xxx.xxx.xxx:xx'''
+        print proxy, auth        
+        if proxy == "%s:%s" % (None, None):
+            self = urldownload(self.cookies)
+            return
         self.proxy = proxy
         self.opener.add_handler(urllib2.ProxyHandler({'http': proxy}))
         if auth:
@@ -99,6 +105,7 @@ class okeyko:
         self.__captcha = None
         self.__envio = False
         self.__pensamientos = None
+        self.__conectado_result = None
         
 
     def login(self, usuario, contra):
@@ -126,11 +133,12 @@ class okeyko:
         print self.__conectado_result
         return
 
-    def conectado(self):
-        if self.pagina("http://www.okeyko.com/v2/index.php").find(
+    def conectado(self, down=True):
+        if down:
+            if self.pagina("http://www.okeyko.com/v2/index.php").find(
                                 "|| Hola") == -1:
-            self.__conectado = False
-            self.connect()
+                self.__conectado = False
+                self.connect()
         return self.__conectado, self.__conectado_result
         
     def get_all(self):
@@ -349,33 +357,33 @@ class okeyko:
         return [list(a) for a in self.__inbox]
         
     def inboxNew(self, minId=0):
-        #url = "/nv02/nuevos.php"
+        inboxNew = []
         url = "http://www.okeyko.com/v2/nuevos.php"
         pag = self.pagina(url).strip()
-        #print pag
         if pag == "</form >":
             return False
-        #pag = BS(unescape(unicode(pag, 'latin-1')))
         #pag = BS(unicode(pag, 'latin-1'))
         pag = pq(unicode(pag, 'latin-1'))
-        tables = pag.findAll('table')
+        tables = pag('table')
         tablesN = len(tables) / 3
-        inboxNew = []
+
         for i in range(0, tablesN):
-            table = tables[i * 3]
-            de = table.findAll('a')[1].text
+            table = tables.eq(i * 3)
+            de = table('a:eq(1)').text()
             de = de[de.find(">")+1:]
-            hora = table.find('td',{'align':'right'}).text
-            mensaje = table.findAll('br')[6].next.string.strip()
-            Oik = table.find('div',{'style':'display:none; padding:5px; '
-                + 'margin-left:30px;margin-right:30px;background-color:'
-                + '#F2F2F2'})['id'].replace('_','')
-            avatar = table.img['src']
+            hora = table("td[align='right']:first").text()
+            Oik = table.find("div[style='display:none; padding:5px; "
+                + "margin-left:30px;margin-right:30px;background-color:"
+                + "#F2F2F2']").attr('id').replace('_','')
+            avatar = table('img:first').attr('src')
             avatar = avatar[avatar.rfind('/')+1:]
-            leido = table.find('div', \
-                {'style':' font-size:11px; color:#666;'}).text
+            leido = table("div[style=' font-size:11px; color:#666;']").text()
             leido = 0 #TODO: Arreglar leido
             fav = 0 #TODO: Get Favorito
+            #Se borra todo y se deja solo el texto del mensaje
+            while table.children().eq(0).children().eq(2).children().children().eq(0).remove():
+                pass
+            mensaje = table.children().eq(0).children().eq(2).children().text()
             if int(Oik) <= int(minId): #TODO: arreglar esto. Es feo.
                 break
             else:
@@ -511,6 +519,13 @@ class okeyko:
     def enviar_mensaje(self, para, men):
         #http://www.okeyko.com/nv02/ajax.php para= mensaje=
         if self.__conectado != True: return
+
+        if type(para) == tuple or type(para) == list:
+            if len(para) > 4:
+                self.enviar_mensaje(para[:4])
+                self.enviar_mensaje(para[4:])
+                return True, "FIXME: mando True, por mandar xD"
+            para = ','.join(para)
         para = para.replace("@","")
         #men = unicode( men, "utf-8").encode("iso-8859-1")
         #men = unicode( men, "utf-8")
@@ -683,6 +698,9 @@ class okeyko:
         ret = resp.read()
         resp.close()
         return ret
+
+    def setProxy(self, host, port, user=None, passw=None):
+        self.__download.setProxy("%s:%s" % (host, port), (user, passw))
 
     def disconnect(self):
         self.__download = urldownload()

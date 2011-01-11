@@ -4,10 +4,11 @@ import gtk
 import pango
 
 LIST = [ 
-    {'stock_id' : gtk.STOCK_HOME, 'text' : 'General'},
+    #{'stock_id' : gtk.STOCK_HOME, 'text' : 'General'},
     {'stock_id' : gtk.STOCK_SELECT_COLOR,'text' : 'Tema'},
     {'stock_id' : gtk.STOCK_INDEX,'text' : 'Notificaciones'},
     {'stock_id' : gtk.STOCK_MEDIA_NEXT,'text' : 'Sonidos'},
+    {'stock_id' : gtk.STOCK_NETWORK,'text' : 'Conexion'},
     {'stock_id' : gtk.STOCK_LEAVE_FULLSCREEN,'text' : 'Escritorio'},
 ]
 
@@ -38,10 +39,16 @@ class SettingsWindow(gtk.Window):
         # Create the list store model for the treeview.
         listStore = gtk.ListStore(gtk.gdk.Pixbuf, str)
         
-        for i in LIST:
-            #we should use always the same icon size, we can remove that field in LIST
-            listStore.append([self.render_icon(i['stock_id'], \
-                              gtk.ICON_SIZE_LARGE_TOOLBAR), i['text']])
+        if Control['Okeyko'].conectado(False)[0]:
+            for i in LIST:
+                #we should use always the same icon size, we can remove that field in LIST
+                listStore.append([self.render_icon(i['stock_id'], \
+                                  gtk.ICON_SIZE_LARGE_TOOLBAR), i['text']])
+        else:
+            for j in [3, 4]:
+                i = LIST[j]
+                listStore.append([self.render_icon(i['stock_id'], \
+                                  gtk.ICON_SIZE_LARGE_TOOLBAR), i['text']])
 
         treeView = gtk.TreeView(listStore) # Create the TreeView
 
@@ -84,14 +91,23 @@ class SettingsWindow(gtk.Window):
         hButBox.pack_start(bClose)
         vbox.pack_start(hButBox, False, False)
         
-        self.pageGeneral = pageGeneral(Control)
-        self.pageTema = pageTema(Control)
-        self.pageNot = pageNot(Control)
-        self.pageSonido = pageSonido(Control)
-        self.pageEscritorio = pageEscritorio(Control)
+        if Control['Okeyko'].conectado(False)[0]:
+            #self.pageGeneral = pageGeneral(Control)
+            self.pageTema = pageTema(Control)
+            self.pageNot = pageNot(Control)
+            self.pageSonido = pageSonido(Control)
+            self.pageConexion = pageConexion(Control)
+            self.pageEscritorio = pageEscritorio(Control)
+                    
+            #self.page_dict = [self.pageGeneral, self.pageTema, self.pageNot,
+            self.page_dict = [self.pageTema, self.pageNot,
+                         self.pageSonido, self.pageConexion, self.pageEscritorio]
+
+        else:
+            self.pageEscritorio = pageEscritorio(Control)
+            self.pageConexion = pageConexion(Control)
         
-        self.page_dict = [self.pageGeneral, self.pageTema, self.pageNot,
-                          self.pageSonido, self.pageEscritorio]
+            self.page_dict = [self.pageConexion, self.pageEscritorio]
 
         for p in self.page_dict:
             self.notebook.append_page(p)
@@ -147,8 +163,6 @@ class pageNot(gtk.VBox):
       self.set_spacing(SPACING-3) #to fit the actual height
       self.set_border_width(10)
       self.installNewText = 'Instalar nuevo...'
-
-
       
       lbTitle = gtk.Label()
       lbTitle.set_markup('<b>Notificaciones en Pantalla</b>')
@@ -584,13 +598,303 @@ class pageSonido(gtk.VBox):
       self.previewButton.set_sensitive(check.get_active())
 
 class pageTema(gtk.VBox):
+   ''' This represents the Tema page. '''
+   def __init__(self, Control):
+      gtk.VBox.__init__(self)
+      self.control = Control
+      self.config = self.control['Config']
+
+      self.set_spacing(SPACING-3) #to fit the actual height
+      self.set_border_width(10)
+      self.installNewText = 'Instalar nuevo...'
+      
+      lbTitle = gtk.Label()
+      lbTitle.set_markup('<b>Configuracion de Temas</b>')
+      hbTitleLabel = gtk.HBox()
+      hbTitleLabel.pack_start(lbTitle, False, True, padding=5)
+      self.pack_start(hbTitleLabel, False, False, padding=5)
+
+      themes = list(self.config.themesTheme)
+
+      self.theme = gtk.combo_box_new_text()
+      labelTheme = gtk.Label('Tema _General:')
+      labelTheme.set_alignment(0.0, 0.5)
+      labelTheme.set_use_underline(True)
+      self.values2 = {}
+      count=0
+      self.DefaultIndex = None
+      for name in themes:
+          self.theme.append_text(name)
+          self.values2[name]=int(count)
+          if name == 'default':
+              self.DefaultIndex = count
+          count += 1
+      self.theme.append_text(self.installNewText)
+      if self.config.glob['theme'] in themes:
+          self.theme.set_active(self.values2[self.config.glob['theme']])
+      else:
+          self.theme.set_active(0)
+      self.theme.connect("changed", self.savetheme, 'theme')
+      
+      vboxlabel = gtk.VBox(homogeneous=False, spacing=5)
+      vboxlabel.pack_start(labelTheme, True, True)
+      
+      vboxentry = gtk.VBox(homogeneous=False, spacing=5)
+      vboxentry.pack_start(self.theme, True, True)
+
+      hbox = gtk.HBox(homogeneous=False, spacing=SPACING)
+      hbox.pack_start(vboxlabel, False, True)
+      hbox.pack_start(vboxentry, True, True)
+
+      emotthemes = list(self.config.themesEmot)
+
+      self.emottheme = gtk.combo_box_new_text()
+      emotlabelTheme = gtk.Label('Tema _Emoticons:')
+      emotlabelTheme.set_alignment(0.0, 0.5)
+      emotlabelTheme.set_use_underline(True)
+      self.emotvalues2 = {}
+      emotcount=0
+      self.emotDefaultIndex = None
+      for name in emotthemes:
+          self.emottheme.append_text(name)
+          self.emotvalues2[name]=int(emotcount)
+          if name == 'default':
+              self.emotDefaultIndex = count
+          count += 1
+      self.emottheme.append_text(self.installNewText)
+      if self.config.user['themeEmot'] in emotthemes:
+          self.emottheme.set_active(self.emotvalues2[self.config.user['themeEmot']])
+      else:
+          self.emottheme.set_active(0)
+      self.emottheme.connect("changed", self.savetheme, 'emot')
+      
+      emotvboxlabel = gtk.VBox(homogeneous=False, spacing=5)
+      emotvboxlabel.pack_start(emotlabelTheme, True, True)
+      
+      emotvboxentry = gtk.VBox(homogeneous=False, spacing=5)
+      emotvboxentry.pack_start(self.emottheme, True, True)
+
+      emothbox = gtk.HBox(homogeneous=False, spacing=SPACING)
+      emothbox.pack_start(emotvboxlabel, False, True)
+      emothbox.pack_start(emotvboxentry, True, True)
+
+      self.pack_start(hbox, False, False)
+      self.pack_start(emothbox, False, False)
+      
+      self.show_all()
+
+
+   def savetheme(self, combo, tipo):
+      active = combo.get_active_text()
+      if active == self.installNewText:
+         if tipo == 'emot':
+             installed = self.installTheme(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,self.emotInstaller)
+         else:
+             installed = self.installTheme(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,self.themeInstaller)
+         if not installed == "":
+            active = installed
+            print active
+            combo.prepend_text(active)
+            if tipo == 'emot':
+               self.emotDefaultIndex += 1
+            else:
+               self.DefaultIndex += 1
+            combo.set_active(0)
+         else:
+            if tipo == 'emot':
+               combo.set_active(self.emotDefaultIndex)
+            else:
+               combo.set_active(self.DefaultIndex)
+            active = "default"
+      if tipo == 'emot':
+         self.config.user['themeEmot'] = active
+      else:
+         self.config.user['theme'] = active
+
+   
+   def themeInstaller(self, path):
+      #read theme name
+      themeName = path.split(os.sep)[-1]
+      #themes = os.listdir(paths.APP_PATH + os.sep + 'sound_themes')
+      themes = list(self.config.themesTheme)
+      themes = [x for x in themes if not x.startswith('.')]
+      if themeName in themes:
+         print "There's already an theme theme with the same name"
+         return ""
+      #create the folder and copy the file inside
+      #theme_path=paths.APP_PATH + os.sep + 'sound_themes' + os.sep + themeName.lower()
+      #shutil.copytree(path,theme_path)
+      #return themeName.lower()
+      return self.config.installTheme(themeName, path)
+
+   def emotInstaller(self, path):
+      #read theme name
+      themeName = path.split(os.sep)[-1]
+      #themes = os.listdir(paths.APP_PATH + os.sep + 'sound_themes')
+      themes = list(self.config.themesEmot)
+      themes = [x for x in themes if not x.startswith('.')]
+      if themeName in themes:
+         print "There's already an Emot theme with the same name"
+         return ""
+      #create the folder and copy the file inside
+      #theme_path=paths.APP_PATH + os.sep + 'sound_themes' + os.sep + themeName.lower()
+      #shutil.copytree(path,theme_path)
+      #return themeName.lower()
+      return self.config.installTheme(themeName, path)
+   
+   def installTheme(self, chooserAction, installFunction, chooserTitle="Seleccionar carpeta del Tema", validateFunction=None):
+      ''' chooserAction is a gtk.FILE_CHOOSER_ACTION specifying file or folder action '''
+      fileChooser = gtk.FileChooserDialog(title=chooserTitle, action=chooserAction,\
+                                              buttons=(gtk.STOCK_OK, gtk.RESPONSE_ACCEPT,\
+                                              gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+      fileChooser.set_select_multiple(False)
+      response = fileChooser.run()
+      if response == gtk.RESPONSE_ACCEPT:
+         selectedPath = fileChooser.get_filename()
+         themeName = installFunction(selectedPath)
+         fileChooser.destroy()
+         return themeName
+      else:
+         fileChooser.destroy()
+         return ""
+   
+   def save(self):
+      '''save the actual setting'''      
+      pass
+
+class pageConexion(gtk.VBox):
+    ''' This represents the Connection page. '''
+    
     def __init__(self, Control):
         gtk.VBox.__init__(self)
+        self.config = Control['Config']
+        self.Control = Control
+        self.set_spacing(SPACING)
+        self.set_border_width(10)
+
+        # Create a test item, like a label
+        lbTitle = gtk.Label()
+        lbTitle.set_markup('<b>Conexiones</b>')
+        hbTitleLabel = gtk.HBox()
+        hbTitleLabel.pack_start(lbTitle, False, True, padding=5)
+        self.pack_start(hbTitleLabel, False, False, padding=5)
+
+        self.proxySettings = ProxySettings(self.config)
+        frame = gtk.Frame('Configuracion Proxy')
+        frame.set_border_width(4)
+        frame.add(self.proxySettings)
+
+
+        proxyBox = gtk.VBox(spacing=2)
+        proxyBox.set_border_width(4)
+        proxyBox.pack_start(frame, False, False)
+
+        self.pack_start(proxyBox, True, True)
+
+        self.show_all()
 
     def save(self):
-        pass
+        '''save the actual setting'''
+        self.proxySettings.save()
+        if self.config.glob['useProxy']:
+            self.Control['Okeyko'].setProxy( self.config.glob['proxyHost'],
+                                             self.config.glob['proxyPort'], 
+                                             self.config.glob['proxyUsername'],
+                                             self.config.glob['proxyPassword'] )
+        else:
+            self.Control['Okeyko'].setProxy(None, None, None, None)
 
-#class DesktopPage(gtk.VBox):pageEscritorio
+class ProxySettings(gtk.VBox):
+    '''This class represents the panel with the proxy variables
+    in the config file, used in Connection page'''
+
+    def __init__(self, config):
+        '''Constructor'''
+        gtk.VBox.__init__(self)
+
+        self.config = config
+
+        self.set_spacing(8)
+        self.set_border_width(8)
+
+        self.useProxy = gtk.CheckButton('_Usar proxy')
+        self.useProxy.set_active(self.config.glob['useProxy'])
+
+        self.host = gtk.Entry()
+        self.host.set_text(self.config.glob['proxyHost'])
+        self.port = gtk.Entry()
+        self.port.set_text(str(self.config.glob['proxyPort']))
+        self.username = gtk.Entry()
+        self.username.set_text(str(self.config.glob['proxyUsername']))
+        self.password = gtk.Entry()
+        self.password.set_text(str(self.config.glob['proxyPassword']))
+        self.password.set_visibility(False)
+          
+        table = gtk.Table(2, 4)
+        table.set_row_spacings(2)
+        table.set_col_spacings(2)
+
+        host = gtk.Label('_Host:')
+        host.set_alignment(0.0, 0.5)
+        host.set_use_underline(True)
+        host.set_mnemonic_widget(self.host)
+        port = gtk.Label('_Puerto:')
+        port.set_alignment(0.0, 0.5)
+        port.set_use_underline(True)
+        port.set_mnemonic_widget(self.port)
+        username = gtk.Label('_Usuario:')
+        username.set_alignment(0.0, 0.5)
+        username.set_use_underline(True)
+        username.set_mnemonic_widget(self.username)
+        password = gtk.Label('Pass_word:')
+        password.set_alignment(0.0, 0.5)
+        password.set_use_underline(True)
+        password.set_mnemonic_widget(self.password)
+        table.attach(host, 0, 1, 0, 1)
+        table.attach(port , 0, 1, 1, 2)
+        table.attach(username, 0, 1, 2, 3)
+        table.attach(password , 0, 1, 3, 4)
+
+        table.attach(self.host, 1, 2, 0, 1)
+        table.attach(self.port, 1, 2, 1, 2)
+        table.attach(self.username, 1, 2, 2, 3)
+        table.attach(self.password, 1, 2, 3, 4)
+
+        self.useProxyToggled(self.useProxy)
+        self.useProxy.connect('toggled', self.useProxyToggled)
+        self.pack_start(self.useProxy)
+        self.pack_start(table)
+
+        self.show_all()
+
+    def save(self):
+        '''save the actual setting'''
+        host = self.host.get_text()
+        if host.startswith('http://'):
+            host = host.split('http://')[1]
+        if host.find('/') != -1:
+            host = host.split('/')[0]
+
+        self.config.glob['useProxy'] = self.useProxy.get_active()
+        self.config.glob['proxyHost'] = host
+        self.config.glob['proxyPort'] = self.port.get_text()
+        self.config.glob['proxyUsername'] = self.username.get_text()
+        self.config.glob['proxyPassword'] = self.password.get_text()
+
+    def useProxyToggled(self, check):
+        '''callback for the toggled signal'''
+
+        if self.useProxy.get_active():
+            self.host.set_sensitive(True)
+            self.port.set_sensitive(True)
+            self.username.set_sensitive(True)
+            self.password.set_sensitive(True)
+        else:
+            self.host.set_sensitive(False)
+            self.port.set_sensitive(False)
+            self.username.set_sensitive(False)
+            self.password.set_sensitive(False)
+
 class pageEscritorio(gtk.VBox):
     ''' This represents the desktop page. '''
     

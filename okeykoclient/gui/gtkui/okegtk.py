@@ -101,6 +101,9 @@ class mainWindow(gtk.Window):
         LoginWin = LoginWindow.LoginWindow(self.__Control)
         LoginWin.connect('aboutOpen', lambda *x: About.AboutOkeyko(self.__Config).run())
         LoginWin.connect('openLink', lambda *x: self.__Control['desktop'].open(x[1]))
+        LoginWin.connect('settingsOpen', 
+                                    lambda *x: SettingsWindow.SettingsWindow(
+                                               self.__Control, self).show() )
         LoginWin.connect('connected', redraw)
         self.add(LoginWin)
         self.show_all()
@@ -1231,5 +1234,5 @@ class mainWindow(gtk.Window):
     def disconnect(self, *args, **kargs):
         self.LoginWin()    
         if kargs.has_key('error'):
-            self.child.showError(kargs['error'])            
+            self.child.showError(kargs['error'])
         self.emit('redraw-disconnect')
