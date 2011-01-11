@@ -261,6 +261,19 @@ class LoginWindow(gtk.VBox):
         self.userEntry.set_flags(gtk.CAN_FOCUS)
         self.userEntry.grab_focus()
 
+    def showError(self, error):
+        if self.errorBox.child:
+            self.errorBox.remove(self.errorBox.child)
+        hboxerror = gtk.HBox()
+        imageerror = gtk.image_new_from_stock(gtk.STOCK_DIALOG_ERROR,
+                                              gtk.ICON_SIZE_LARGE_TOOLBAR)
+        hboxerror.pack_start(imageerror)
+        laberror = gtk.Label(error)
+        hboxerror.pack_start(laberror)
+        self.errorBox.add(hboxerror)
+        hboxerror.show_all()
+        self.errorBox.show()        
+
 class gtk_LoginImage(gtk.Image):
     def __init__(self, path=None, height=None, width=None):
         gtk.Image.__init__(self)

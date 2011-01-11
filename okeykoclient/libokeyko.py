@@ -561,7 +561,9 @@ class okeyko:
         if self.__conectado != True: return        
         if len(estado) > 250:
             print "============= Error estado ========== \n okeyko.estadoSet: mas de 250 caracteres \n" + para
-            return False, "Mensaje con mas de 250 caracteres"        
+            return False, "Mensaje con mas de 250 caracteres"
+        if estado == "":
+            estado = "Pensando en......"   
         try:
             #estado = unicode(estado, "utf-8").encode("iso-8859-1")
             #estado = estado.encode("iso-8859-1")

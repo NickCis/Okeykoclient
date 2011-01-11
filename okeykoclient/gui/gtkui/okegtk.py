@@ -1229,5 +1229,7 @@ class mainWindow(gtk.Window):
         return True
 
     def disconnect(self, *args, **kargs):
-        self.LoginWin()
+        self.LoginWin()    
+        if kargs.has_key('error'):
+            self.child.showError(kargs['error'])            
         self.emit('redraw-disconnect')

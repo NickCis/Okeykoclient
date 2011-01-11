@@ -90,7 +90,7 @@ class ThreadHandler():
         ''' Connects de actions: newInbox newPensamiento newOutbox'''
         self.threadDict['ActMen'].connect(action, callback)
 
-    def Connect(self, action, callback):
+    def connect(self, action, callback):
         ''' Connects de actions: newInbox newPensamiento newOutbox'''
         if action == 'setError' or action == 'setConError':
             self.threadDict['ActMen'].connect(action, callback)

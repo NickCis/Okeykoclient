@@ -12,6 +12,17 @@ import TrayIcon
 def gtk_main(Control):
 
     def redrawDone(*args):
+        def setConError(error):
+            disconnect(error=error)
+
+        def setError(error):
+            dialog = gtk.Dialog('Error', MainWindow)
+            dialogLabel = gtk.Label(error)
+            dialogLabel.set_property('wrap', True)
+            dialogLabel.show()
+            dialog.vbox.pack_start(dialogLabel)
+            dialog.run()
+            
         def setInbox(inbox):
             Control['MainWindow'].set_inbox(inbox)
 
@@ -46,6 +57,8 @@ def gtk_main(Control):
         
         #Control['ActMen'].thStart()
         Control['ThreadHandler'].createActMen()
+        Control['ThreadHandler'].connect('setConError', setConError)
+        Control['ThreadHandler'].connect('setError', setError)
         Control['ThreadHandler'].ActMenConnect('setInbox', setInbox)
         Control['ThreadHandler'].ActMenConnect('setPensamiento', setPensamiento)
         Control['ThreadHandler'].ActMenConnect('setOutbox', setOutbox)
@@ -60,6 +73,13 @@ def gtk_main(Control):
         Control['Sound'].update()
         Control['Notification'].updateConfig()
         Tray.reBuildMenu()
+    
+    def disconnect(*args, **kargs):
+        if kargs.has_key('error'):
+            MainWindow.disconnect(kargs['error'])
+        else:
+            MainWindow.disconnect()
+    
     
     def redrawDisconnect(*args):
         Control['Sound'].clearUpdate()
