@@ -241,10 +241,10 @@ class okeyko:
         while str(li) != '':
             de = li('a:eq(1)').text()
             hora = li("td[align='right']:first").text()
-            mensaje = li.text()
-            mensaje = mensaje[mensaje.find('</h2>')+5:mensaje.find('Leido desde')].strip()
-            if mensaje.find('Agregar a Chat (IMok) -->') != -1:
-                mensaje = mensaje[mensaje.find('Agregar a Chat (IMok) -->')+26:]
+            #mensaje = li.text()
+            #mensaje = mensaje[mensaje.find('</h2>')+5:mensaje.find('Leido desde')].strip()
+            #if mensaje.find('Agregar a Chat (IMok) -->') != -1:
+            #    mensaje = mensaje[mensaje.find('Agregar a Chat (IMok) -->')+26:]
             Oik = li('label').attr('for')
             avatar = li('img:first').attr('src')
             avatar = avatar[avatar.rfind('/')+1:]
@@ -257,6 +257,10 @@ class okeyko:
                 leido = 0
             favHref = li("img[src='images/iconos_mensajes/favoritos2.png']").parent().attr('href')
             fav = favHref[favHref.rfind('&')+1:]
+            #Ponerlo al final por que borra todo para qedarse solo con el texto del mensaje
+            while li.children().eq(0).children().children().eq(0).children().eq(2).children().children().eq(0).remove():
+                pass
+            mensaje = li.children().eq(0).children().children().eq(0).children().eq(2).children().text()
             menInbox.append([de, hora, mensaje, Oik, avatar, leido, fav])
             li = li.next()
         return menInbox

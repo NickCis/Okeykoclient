@@ -7,6 +7,7 @@ import Notebook
 import TextField
 import MensajeVen
 import LoginWindow
+import MultipleEntry
 import SettingsWindow
 
 
@@ -855,14 +856,18 @@ class mainWindow(gtk.Window):
         labpara = gtk.Label("Para:")
         hbox.pack_start(labpara)        
         labpara.show()
-        para = gtk.Entry()        
-        autocompletado = gtk.EntryCompletion ()
-        para.set_completion(autocompletado)
-        contactos_store = gtk.ListStore (gobject.TYPE_STRING)
-        for cont in self.__Okeyko.agenda_lista(True):
-            contactos_store.append([cont,])
+        #para = gtk.Entry()
+        para = MultipleEntry.MultipleEntry()
+        autocompletado = gtk.EntryCompletion()
+        #contactos_store = gtk.ListStore(gobject.TYPE_STRING)
+        #for cont in self.__Okeyko.agenda_lista(True):
+        #    contactos_store.append([cont,])
+        contactos_store = gtk.ListStore(str, str)
+        for a, b, c in self.__Okeyko.agenda_lista():
+            contactos_store.append([a, b])
         autocompletado.set_model (contactos_store)
-        autocompletado.set_text_column (0)       
+        autocompletado.set_text_column(0)
+        para.set_completion(autocompletado)  
         if destinatario != None: para.set_text(destinatario)
         hbox.pack_start(para)
         para.show()
