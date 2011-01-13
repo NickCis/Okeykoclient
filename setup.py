@@ -58,10 +58,10 @@ if os.name == 'nt':
 
     opts = {
         'py2exe': {
-            'packages': ['encodings', 'gtk',],
+            'packages': ['encodings', 'gtk', 'gzip', 'lxml'],
             'includes': ['locale', 'gio', 'cairo', 'pangocairo', 'pango',
                 'atk', 'gobject', 'os', 'code', 'winsound', 'win32api',
-                'win32gui'],
+                'win32gui', 'cookielib'],
             'excludes': ['ltihooks', 'pywin', 'pywin.debugger',
                 'pywin.debugger.dbgcon', 'pywin.dialogs',
                 'pywin.dialogs.list', 'Tkconstants', 'Tkinter', 'tcl'

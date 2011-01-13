@@ -5,10 +5,7 @@
 import Sound
 import Config
 import desktop
-try:
-    import libokeyko
-except:
-    import libokeyko_beautifulSoup as libokeyko
+import libokeyko
 import OkeThreads
 from gui import gtkui
 
