@@ -85,6 +85,17 @@ class MultipleEntry(gtk.HBox):
 
 
     def __set_completion(self, entry, completion=None):
+        def match_func(completion, key, iter):
+            model = completion.get_model()
+            for posib in model[iter]:
+                if type(posib) == str:
+                    posib = posib.lower()
+                    if posib.find(entry.get_text().lower()) != -1:
+                        ret = True
+                        break
+            else:
+                ret = False
+            return ret    
         def completionCB(comple, model, iterC):
             #text = "%s," % model.get_value(iterC, comple.get_property('text-column'))
             text = model.get_value(iterC, comple.get_property('text-column'))
@@ -107,6 +118,7 @@ class MultipleEntry(gtk.HBox):
         if completion == None:
             completion = self.completion
         newComple = gtk.EntryCompletion()
+        newComple.set_match_func(match_func)
         newComple.set_model(completion.get_model())
         newComple.set_text_column(completion.get_text_column())
         newComple.set_property("popup-set-width", False)

@@ -39,6 +39,7 @@ class MainClass:
         self.NotiPixmap, NotiPMask = gtk.gdk.pixbuf_new_from_file(NotiPixmapF).render_pixmap_and_mask()
         NotiPixmapCloseF = self.Config.pathFile('Not-close.png')
         self.NotiClosePixmap = gtk.gdk.pixbuf_new_from_file(NotiPixmapCloseF)
+        self.notShowTime = int(self.Config.user['notShowTime'])
         self.notType = int(self.Config.user['notType'])
         if self.notType == 2:
             self.GtkNotify = False
@@ -56,6 +57,7 @@ class MainClass:
             pynotify.init('okeykoclient')
         self.Noti = EmeseneNotification.NotificationManager(128, 200)
         self.GtkNoti = gtkPopupNotify.NotificationStack(size_x=320, size_y=83, sep_y=10)
+        self.GtkNoti.timeout = self.notShowTime
 
     def pyNotification(self, string, title=None, callback=None, params=None, userPixbuf=None):
         if CAN_PYNOTIFY:
@@ -78,6 +80,8 @@ class MainClass:
                              self.Config.avatarLoad(userPixbuf, False)[1], 48,48)
         else:
             userpixbufPath = self.Config.pathFile('theme-logo.png')
+        if not title:
+            title = "Okeyko Client"
         if self.corner == 0:
             corner = (True, True)
         elif self.corner == 1:
@@ -101,6 +105,8 @@ class MainClass:
             if self.PyNotify and CAN_PYNOTIFY:
                 Noti = pynotify.Notification('Okeyko Client', string, 'okeykoclient')
                 Noti.show()
+            elif self.GtkNotify:
+                self.gtkNotification(string)
             else:
                 self.Noti.newNotification(string, self.corner, self.scroll, self.NotiPixmap, self.NotiClosePixmap, color=self.NotiCol, duration=dura)
 
@@ -118,7 +124,7 @@ class MainClass:
                 self.Noti.newNotification(string, self.corner, self.scroll,\
                                     self.NotiPixmap, self.NotiClosePixmap,\
                                     callback, params, userPixbuf, self.font,\
-                                    self.color, 0)
+                                    self.color, self.notShowTime)
     def pensamientoNew(self, user=None, callback=None, params=None, userPixbuf=None, text=None):
         if self.Config.user['notshowPensamiento'] and self.Config.user['enableNot']:
             string = "Nuevo Pensamiento de %s" % user
@@ -132,7 +138,7 @@ class MainClass:
                 self.Noti.newNotification(string, self.corner, self.scroll,\
                                     self.NotiPixmap, self.NotiClosePixmap,\
                                     callback, params, userPixbuf, self.font,\
-                                    self.color, 7)
+                                    self.color, self.notShowTime)
     def enviar(self, user=None, callback=None, params=None, userPixbuf=None, text=None):
         if self.Config.user['notshowEnviar'] and self.Config.user['enableNot']:
             string = "Mensaje enviado a %s" % user
@@ -146,7 +152,7 @@ class MainClass:
                 self.Noti.newNotification(string, self.corner, self.scroll,\
                                     self.NotiPixmap, self.NotiClosePixmap,\
                                     callback, params, userPixbuf, self.font,\
-                                    self.color, 7)
+                                    self.color, self.notShowTime)
 
     def preview(self, pos, scroll, font, color, theme, nottype=0):
         if self.Config.user['enableNot']:

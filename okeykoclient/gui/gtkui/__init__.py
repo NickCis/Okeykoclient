@@ -39,8 +39,9 @@ def gtk_main(Control):
         #self.__MainWindow.blink() #TODO
         men = list(mensajes)
         men.reverse()
-        for m in men: #TODO: Callback
-            Control['Notification'].mensajeNew(m[0], None, None, m[4], m[2])
+        for m in men:
+            openMessage = lambda *x, **y: MainWindow.openMessage(m[3])
+            Control['Notification'].mensajeNew(m[0], openMessage, None, m[4], m[2])
         
     def newPensamiento(pensamientos):
         Control['MainWindow'].new_pen(pensamientos)

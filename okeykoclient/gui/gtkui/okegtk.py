@@ -1164,8 +1164,29 @@ class mainWindow(gtk.Window):
         else:
             self.redactar_ventana( None, model[row][1])
 
+    def openMessage(self, okid):
+        def match_func(model, iter, data):
+            column, key = data # data is a tuple containing column number, key
+            value = model.get_value(iter, column)
+            return value == key
+        def search(model, iter, func, data):
+            while iter:
+                if func(model, iter, data):
+                    return iter
+                result = search(model, model.iter_children(iter), func, data)
+                if result: return result
+                iter = model.iter_next(iter)
+            return None
+        match_iter = search(self.inbox_store, self.inbox_store.iter_children(None), 
+                            match_func, (5, str(okid)))
+        path = self.inbox_store.get_path(match_iter)
+        self.mostrarmensaje(self.inbox_store, path, None)
+
     def mostrarmensaje(self, widget, row, col):
-        model = widget.get_model()
+        if type(widget) == gtk.ListStore:
+            model = widget
+        else:
+            model = widget.get_model()
         MensajeVen.MensajeVen(model, row, self.__Control)
         if model[row][9]:
             self.__queueToServer.put((self.__Okeyko.set_leido, (model[row][5],),\
