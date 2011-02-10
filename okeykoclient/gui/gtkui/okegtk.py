@@ -849,7 +849,7 @@ class mainWindow(gtk.Window):
         self.__Okeyko.estadoSet(getText)
 
     def redactar_ventana(self, widget=None, destinatario=None, men=None, data=None):
-        ''' Callback que crea la ventana para redactar mensajes'''
+        ''' Callback que crea la ventana para redactar mensajes Crea Dialog'''
         redactar = gtk.Dialog("Redactar", self)
         vbox = gtk.VBox()
         hbox = gtk.HBox()
@@ -898,12 +898,12 @@ class mainWindow(gtk.Window):
         mensaje.get_buffer().connect("changed", self.actnumlabel, numlabel)
 
     def Sms_ventana(self, widget=None, destinatario=None, men=None, data=None):
-        ''' Callback que crea la ventana para redactar mensajes'''
+        ''' Callback que crea la ventana para redactar okysms. Crea dialog'''
 
         def mandarSms(*args, **kargs):
             '''Callback para mandar mensaje '''
             def post_mandarmensaje(arg):
-                bol, error = arg
+                bol, error = arg                
                 if bol:        
                     tit = "OkySms Enviado!"
                     redactar.destroy()
@@ -993,17 +993,21 @@ class mainWindow(gtk.Window):
         '''Callback para mandar mensaje '''
         def post_mandarmensaje(arg):
             bol, error = arg
+            print "arg", arg
             if bol:        
                 tit = "Mensaje Enviado!"
                 window.destroy()
+                self.__Notification.enviar(user=para)
+                self.__Control['Sound'].enviar()
             else:
+                anim.destroy()
+                label.destroy()
                 alert.child.set_property('sensitive', True)
                 tit = "Error Mandando Mensaje"
-                label = gtk.Label(error)
-                container.pack_start(label)
-                label.show()
-            self.__Notification.enviar()
-            self.__Control['Sound'].enviar()
+                labela = gtk.Label(error)
+                container.pack_start(labela)
+                labela.show()
+                self.__Notification.enviar(user=False)
             return
 
         alert.child.set_property('sensitive', False)

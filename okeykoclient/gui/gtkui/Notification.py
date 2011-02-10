@@ -141,7 +141,10 @@ class MainClass:
                                     self.color, self.notShowTime)
     def enviar(self, user=None, callback=None, params=None, userPixbuf=None, text=None):
         if self.Config.user['notshowEnviar'] and self.Config.user['enableNot']:
-            string = "Mensaje enviado a %s" % user
+            if user == False:
+                string = "Error enviando mensaje"
+            else:
+                string = "Mensaje enviado a %s" % user
             if self.PyNotify and CAN_PYNOTIFY:
                 self.pyNotification(string, text, callback, params, userPixbuf)
             elif self.GtkNotify:
