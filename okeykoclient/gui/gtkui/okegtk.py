@@ -6,9 +6,11 @@ import About
 import Notebook
 import TextField
 import MensajeVen
+import RedactarVen
 import LoginWindow
 import MultipleEntry
 import SettingsWindow
+
 
 
 UI = '''<ui>
@@ -850,185 +852,11 @@ class mainWindow(gtk.Window):
 
     def redactar_ventana(self, widget=None, destinatario=None, men=None, data=None):
         ''' Callback que crea la ventana para redactar mensajes Crea Dialog'''
-        redactar = gtk.Dialog("Redactar", self)
-        vbox = gtk.VBox()
-        hbox = gtk.HBox()
-        labpara = gtk.Label("Para:")
-        hbox.pack_start(labpara)        
-        labpara.show()
-        #para = gtk.Entry()
-        para = MultipleEntry.MultipleEntry()
-        autocompletado = gtk.EntryCompletion()
-        #contactos_store = gtk.ListStore(gobject.TYPE_STRING)
-        #for cont in self.__Okeyko.agenda_lista(True):
-        #    contactos_store.append([cont,])
-        contactos_store = gtk.ListStore(str, str)
-        for a, b, c in self.__Okeyko.agenda_lista():
-            contactos_store.append([a, b])
-        autocompletado.set_model (contactos_store)
-        autocompletado.set_text_column(0)
-        para.set_completion(autocompletado)  
-        if destinatario != None: para.set_text(destinatario)
-        hbox.pack_start(para)
-        para.show()
-        enviar = gtk.Button("Enviar")
-        hbox.pack_end(enviar)        
-        enviar.show()         
-        redactar.vbox.pack_start(hbox)
-        hbox.show()
-        labmen = gtk.Label("Mensaje:")
-        redactar.vbox.pack_start(labmen)
-        labmen.show()
-        mensaje = gtk.TextView()
-        mensaje.set_wrap_mode(gtk.WRAP_WORD)
-        mensaje.set_accepts_tab(False)
-        mensaje.set_left_margin(6)
-        mensaje.set_right_margin(6)
-        mensaje.set_wrap_mode(gtk.WRAP_WORD_CHAR)
-        mensaje.set_size_request(275,100)
-        if men != None:
-            mensaje.get_buffer().set_text(men)
-        redactar.vbox.pack_start(mensaje)
-        mensaje.show()
-        numlabel = gtk.Label()
-        redactar.vbox.pack_start(numlabel)
-        numlabel.show()
-        redactar.show()
-        enviar.connect("clicked", self.mandarmensaje, redactar, para, mensaje)
-        mensaje.get_buffer().connect("changed", self.actnumlabel, numlabel)
+        RedactarVen.RedactarVentana(self.__Control, destinatario, men, data)
 
     def Sms_ventana(self, widget=None, destinatario=None, men=None, data=None):
         ''' Callback que crea la ventana para redactar okysms. Crea dialog'''
-
-        def mandarSms(*args, **kargs):
-            '''Callback para mandar mensaje '''
-            def post_mandarmensaje(arg):
-                bol, error = arg                
-                if bol:        
-                    tit = "OkySms Enviado!"
-                    redactar.destroy()
-                else:
-                    redactar.child.set_property('sensitive', True)
-                    tit = "Error Mandando OkySms"
-                    redactar.vbox.pack_start(gtk.Label(error))
-                    uCaptcha =  gtk.gdk.PixbufLoader()
-                    uCaptcha.write(self.__Okeyko.captcha())
-                    uCaptcha.close()
-                    Captcha.set_from_pixbuf(uCaptcha.get_pixbuf())
-                    redactar.show_all()
-                    anim.destroy()
-                #self.__Notification.newNotification(tit)
-                self.__Notification.enviar()
-                self.__Control['Sound'].enviar()
-                return
-    
-            redactar.child.set_property('sensitive', False)
-            CBHbox = gtk.HBox()
-            PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
-            anim = gtk.Image()
-            anim.set_from_animation(PBanim)
-            CBHbox.pack_start(anim, False, False, 0)
-            CBHbox.pack_start(gtk.Label("Enviando"), False, False, 0)
-            redactar.vbox.pack_start(CBHbox, False, False, 0)
-            redactar.show_all()
-            celpara = para.get_text()
-            celpara2 = para2.get_text()
-            CbPara = (celpara, celpara2)
-            CbCaptcha = codigo.get_text()
-            textmensaje = mensaje.get_buffer().get_text(\
-                        mensaje.get_buffer().get_start_iter(),\
-                        mensaje.get_buffer().get_end_iter())
-            self.__queueToServer.put((self.__Okeyko.enviarSms, (CbPara, textmensaje, CbCaptcha),
-                                      {}, post_mandarmensaje, (), {}))
-            return        
-        
-        redactar = gtk.Dialog("OkySms", self)
-        vbox = gtk.VBox()
-        hbox = gtk.HBox()
-        labpara = gtk.Label("Para:")
-        hbox.pack_start(labpara)        
-        #labpara.show()
-        para = gtk.Entry()
-        hbox.pack_start(para)
-        para2 = gtk.Entry()
-        hbox.pack_start(para2)
-        enviar = gtk.Button("Enviar")
-        hbox.pack_end(enviar)        
-        #enviar.show()         
-        redactar.vbox.pack_start(hbox)
-        #hbox.show()
-        labmen = gtk.Label("Mensaje:")
-        redactar.vbox.pack_start(labmen)
-        #labmen.show()
-        mensaje = gtk.TextView()
-        mensaje.set_wrap_mode(gtk.WRAP_WORD)
-        mensaje.set_accepts_tab(False)
-        mensaje.set_left_margin(6)
-        mensaje.set_right_margin(6)
-        mensaje.set_wrap_mode(gtk.WRAP_WORD_CHAR)
-        mensaje.set_size_request(275,100)
-        if men != None:
-            mensaje.get_buffer().set_text(men)
-        redactar.vbox.pack_start(mensaje)
-        #mensaje.show()
-        numlabel = gtk.Label()
-        redactar.vbox.pack_start(numlabel)
-        uCaptcha =  gtk.gdk.PixbufLoader()
-        uCaptcha.write(self.__Okeyko.captcha())
-        uCaptcha.close()
-        Captcha = gtk.image_new_from_pixbuf(uCaptcha.get_pixbuf())
-        redactar.vbox.pack_start(Captcha)
-        codigo = gtk.Entry()
-        redactar.vbox.pack_start(codigo)
-        redactar.show_all()
-        enviar.connect("clicked", mandarSms)
-        mensaje.get_buffer().connect("changed", self.actnumlabel, numlabel)
-    
-    def actnumlabel(self, wid, numlabel):
-        #length = len(wid.get_text(wid.get_start_iter(), wid.get_end_iter())
-        length = wid.get_char_count()
-        numlabel.set_text("%s" % length)
-
-    def mandarmensaje(self, widget, alert, widpara, widmensaje):
-        '''Callback para mandar mensaje '''
-        def post_mandarmensaje(arg):
-            bol, error = arg
-            print "arg", arg
-            if bol:        
-                tit = "Mensaje Enviado!"
-                window.destroy()
-                self.__Notification.enviar(user=para)
-                self.__Control['Sound'].enviar()
-            else:
-                anim.destroy()
-                label.destroy()
-                alert.child.set_property('sensitive', True)
-                tit = "Error Mandando Mensaje"
-                labela = gtk.Label(error)
-                container.pack_start(labela)
-                labela.show()
-                self.__Notification.enviar(user=False)
-            return
-
-        alert.child.set_property('sensitive', False)
-        Hbox = gtk.HBox()
-        PBanim = gtk.gdk.PixbufAnimation(self.__Config.pathFile("theme-loading.gif"))
-        anim = gtk.Image()
-        anim.set_from_animation(PBanim)
-        label = gtk.Label("Enviando")
-        Hbox.pack_start(anim, False, False, 0)
-        Hbox.pack_start(label, False, False, 0)
-        widget.parent.parent.pack_start(Hbox, False, False, 0)
-        widget.parent.parent.show_all()
-        para = widpara.get_text()
-        mensaje = widmensaje.get_buffer().get_text(\
-                    widmensaje.get_buffer().get_start_iter(),\
-                    widmensaje.get_buffer().get_end_iter())
-        container = widget.get_parent().get_parent()
-        window = widget.get_parent().get_parent().get_parent()
-        self.__queueToServer.put((self.__Okeyko.enviar_mensaje, (para, mensaje),
-                                  {}, post_mandarmensaje, (), {}))
-        return
+        RedactarVen.SmsVentana(self.__Control, destinatario, men, data)
 
     def agendaAdd(self, nom=None, desc=None):
         '''Alert para agregar a la agenda'''

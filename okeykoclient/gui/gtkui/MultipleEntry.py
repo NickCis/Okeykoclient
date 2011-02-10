@@ -124,7 +124,13 @@ class MultipleEntry(gtk.HBox):
         newComple.set_property("popup-set-width", False)
         newComple.connect('match-selected', completionCB)
         entry.set_completion(newComple)
-        
+
+    def grab_focus(self, numentry=None):
+        if numentry != None and type(numentry) == int:
+            if numentry > 0 and len(self.entryList) >= numentry:
+                self.entryList[numentry -1].grab_focus()
+                return
+        self.entryList[len(self.entryList)-1].grab_focus()
 
     def show(self):
         self.show_all()        

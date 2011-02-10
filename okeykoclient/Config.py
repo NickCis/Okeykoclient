@@ -78,6 +78,8 @@ DEFAULT_GLOBAL_CONFIG = {
 
 DEFAULT_USER_CONFIG = {
     'menWindowGeometry': '205x150+0+0',
+    'okySmsGeometry': '205x150+0+0',
+    'redactVenGeometry': '205x150+0+0',
     'themeEmot': 'default',
     'themeSound': 'default',
     'soundsplayRecibido': True,
