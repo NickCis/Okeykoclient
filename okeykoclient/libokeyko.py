@@ -558,9 +558,9 @@ class okeyko:
         if self.__conectado != True: return
         #men = unicode( men, "utf-8").encode("iso-8859-1")
         #men = unicode( men, "utf-8")
-        if len(men) > 70:
-            print "============= Error enviando mensaje ========== \n okeyko.enviar: mas de 250 caracteres \n" + para
-            return False, "SMS con mas de 70 caracteres"
+        if len(men) > 100:
+            print "============= Error enviando mensaje ========== \n okeyko.enviar: mas de 250 caracteres \n"
+            return False, "SMS con mas de 100 caracteres"
         url = "http://www.okeyko.com/v2/SMS.php"
         cel = para[0]
         cel2 = para[1]

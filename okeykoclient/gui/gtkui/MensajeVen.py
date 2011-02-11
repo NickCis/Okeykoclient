@@ -12,12 +12,12 @@ class MensajeVen(gtk.Window):
         <menuitem action="Salir"/>
       </menu>
       <menu action="Mensajes">
-        <menuitem action="Nada"/>
+        <menuitem action="Resp"/>
+        <menuitem action="Favs"/>
+        <menuitem action="Bor"/>
       </menu>
       <menu action="Contactos">
-        <menuitem action="Nada"/>
-        <menuitem action="Nada"/>
-        <menuitem action="Nada"/>
+        <menuitem action="Age"/>
       </menu>
     </menubar>
     <toolbar name="Toolbar">
@@ -211,12 +211,11 @@ class EnviadoVen(gtk.Window):
         <menuitem action="Salir"/>
       </menu>
       <menu action="Mensajes">
-        <menuitem action="Nada"/>
+        <menuitem action="Resp"/>
+        <menuitem action="Bor"/>
       </menu>
       <menu action="Contactos">
-        <menuitem action="Nada"/>
-        <menuitem action="Nada"/>
-        <menuitem action="Nada"/>
+        <menuitem action="Age"/>
       </menu>
     </menubar>
     <toolbar name="Toolbar">
