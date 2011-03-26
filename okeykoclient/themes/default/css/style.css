@@ -1,0 +1,320 @@
+* { outline:none; }
+
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend {
+    background:none repeat scroll 0 0 transparent;
+    border:0 none;
+    font-size:100%;
+    margin:0;
+    outline:0 none;
+    padding:0;
+    vertical-align:baseline;
+}
+
+html, body {
+    height:100%;
+    margin:0;
+    overflow:hidden;
+    padding:0;
+    width:100%;
+}
+
+body {
+    background: None repeat-x scroll left top #fff;
+    color: #333;
+    /*font-family: Droid Sans Fallback, WenQuanYi Micro Hei, Sans, Microsoft Yahei, Simhei, Simsun;*/
+    font-family: 'Ubuntu', serif;
+}
+
+a {
+    color: #2048F3;
+}
+
+pre {
+    padding: 5px;
+    overflow:auto; 
+    border: 1px #333 solid;
+    margin: 10px 0;
+}
+
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.dialog ::-webkit-scrollbar-button:start:decrement,
+.dialog ::-webkit-scrollbar-button:end:increment {
+    height: 0px;
+    display: block;
+    background-color: transparent;
+}
+
+.dialog ::-webkit-scrollbar-track-piece,  #status_box ::-webkit-scrollbar-track-piece {
+    background: #666;
+    float: right;
+}
+.dialog ::-webkit-scrollbar-thumb:vertical, #status_box ::-webkit-scrollbar-thumb:vertical  {
+    background: #ccc;
+}
+
+.dialog ::-webkit-scrollbar-thumb:horizontal, #status_box ::-webkit-scrollbar-thumb:horizontal  {
+    background: #ccc;
+}
+
+::-webkit-scrollbar-track-piece {
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb:vertical {
+    height: 50px;
+    background: -webkit-gradient(linear, left top, right top, from(#4d4d4d), to(#2c2c2c));
+}
+
+::-webkit-scrollbar-thumb:horizontal {
+    width: 50px;
+    background: -webkit-gradient(linear, left top, right top, from(#4d4d4d), to(#2c2c2c));
+}
+
+#container {
+    height:100%;
+    margin:0 auto;
+    width:100%;
+}
+/*==========AutoComplete Jquery =============*/
+.ui-autocomplete { position: absolute; cursor: default; }	
+.ui-autocomplete-loading { background: white url('images/ui-anim_basic_16x16.gif') right center no-repeat; }
+* html .ui-autocomplete { width:1px; } /* without this, the menu expands to 100% in IE6 */
+.ui-menu {
+	list-style:none;
+	padding: 2px;
+	margin: 0;
+	display:block;
+}
+.ui-menu .ui-menu {
+	margin-top: -3px;
+}
+.ui-menu .ui-menu-item {
+	margin:0;
+	padding: 0;
+	width: 100%;
+}
+.ui-menu .ui-menu-item a {
+	text-decoration:none;
+	display:block;
+	padding:.2em .4em;
+	line-height:1.5;
+	zoom:1;
+	color: grey;
+}
+.ui-menu .ui-menu-item a:hover{
+    color: white;
+}
+.ui-menu .ui-menu-item a.ui-state-hover,
+.ui-menu .ui-menu-item a.ui-state-active {
+	margin: -1px;
+}
+.ui-widget-content { 
+   	background-color: #e0e0e0;
+	border: 1px solid #b9b9b9;
+    color: #222222/*{fcContent}*/;
+}
+/* ================== Modal Bg ============= */
+#ModalBg {
+    display: none;
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: black;
+    z-index: 5000;
+    opacity:0.4;
+    filter:alpha(opacity=40);
+}
+/* ================== Login window ============= */
+#LoginWindow {
+	background: url(../img/mainbackground.png) no-repeat center center fixed;
+	-webkit-background-size: cover;
+	background-size: cover;
+	height: 100%;
+	width:100%;
+}
+#LoginWindow > .header{
+	width:100%;
+	background: url(../img/backheader.png) repeat top left fixed;
+	height:42px;
+}
+#LoginWindow > .header > span{
+	padding-top: 10px;
+	margin-left: 10px;
+	font-size: 30px;
+	color: white;
+	-webkit-text-shadow: 2px 2px 4px #000;
+	text-shadow: 2px 2px 4px #000;
+}
+
+#logo {
+	float: left;
+	height: 38px;
+	width: 38px;
+	margin-top: 2px;
+	margin-left:10px;
+}
+
+#LoginWindow > .body {
+	text-align: center;
+	position:absolute;
+	top:0;
+	bottom:0;
+	left:0;
+	right:0;
+	margin:auto;
+	height:400px;
+	width:60%;
+	-webkit-box-shadow: 0 0 20px 1px #000, 0 0 0 20px #e0e0e0;
+	box-shadow: 0 0 20px 1px #000, 0 0 0 20px #e0e0e0;
+	border-radius: 10px;
+	background-color: white;	
+}
+#LoginWindow > .body > .avatar {
+    position: relative;
+}
+#LoginWindow > .body > .avatar > img{
+    -webkit-transition: opacity 1s ease-in-out;
+    transition: opacity 1s ease-in-out;
+	width: 80px;
+	height: 80px;
+	border-radius: 10px;
+	-webkit-box-reflect: below 0px -webkit-gradient(linear, left top, left bottom, from(transparent), color-stop(0.5, transparent), to(white));
+	margin-top: 20px;
+	margin-bottom: 50px;
+	opacity:0;
+}
+#LoginWindow > .body > .avatar > img:nth-child(1){
+    position: absolute;
+    left: 0px;
+}
+#LoginWindow > .body > .avatar > img.transparent {
+	opacity:0;
+}
+#LoginWindow > .body > .avatar > img.opaque {
+	opacity:1;
+}
+
+#LoginWindow > .body > .div0 {
+	width: 70%;
+	margin: 0 auto 10px auto;
+}
+#LoginWindow > .body > .div0 > .div1 {
+	font-size: 20px;
+	display: inline;
+}
+#LoginWindow > .body > .div0 > .div1 > p {
+	margin-top: 4px;
+	margin-right: 4px;
+}
+#LoginWindow > .body > .div0 > .div2 {
+	float: right;
+	text-align: right;
+}
+#LoginWindow > .body > .div0 > .div2 > input{
+	display: block;
+	background-color: #e0e0e0;
+	border: 1px solid #b9b9b9;
+	width: 100px;
+}
+#LoginWindow > .body > .div3 {
+	width: 175px;
+	margin: 0 auto;
+	text-align: left;
+}
+#LoginWindow > .body > .div3 > p{
+	font-size: 14px;
+	display: inline;
+}
+#LoginWindow > .body > .div3 > input{
+	display: inline;
+}
+#LoginWindow > .body > .button {
+	text-decoration: none;
+	border-radius: 10px;
+	border: 1px solid #b9b9b9;
+	color: black;
+	margin: 20px auto;
+	display:block;
+	background-image: -webkit-gradient(
+	    linear,
+	    left bottom,
+	    left top,
+	    color-stop(0, #FFFFFF),
+	    color-stop(1.0, #bdbdbd)
+	);
+	width: 140px;
+}
+#LoginWindow > .body > .button:hover {
+	background-image: -webkit-gradient(
+	    linear,
+	    left bottom,
+	    left top,
+	    color-stop(0, #FFFFFF),
+	    color-stop(1.0, #d4d4d4)
+	);
+}
+
+#LoginWindow > .foot{
+	background-color: #0088bc;
+	text-align: right;
+	position: fixed;
+	bottom:0px;
+	left:0px;
+	height: 20px;
+	width:100%;
+}
+#LoginWindow > .foot > a{
+	color: white;
+	text-decoration: none;
+	font-size: 14px;
+	padding-right:5px;
+}
+
+#LoadingConnect {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 200px;
+    height: 90px;
+    margin: -45px -100px -45px -100px;
+    z-index: 6000;
+    background-color: white;
+    text-align: center;
+    border-radius: 10px;
+}
+#LoadingConnect > p {
+    font-size: 20px;
+}
+#LoadingConnect > .button {
+	text-decoration: none;
+	border-radius: 10px;
+	border: 1px solid #b9b9b9;
+	color: black;
+	margin: 10px auto 10px auto;
+	display:block;
+	background-image: -webkit-gradient(
+	    linear,
+	    left bottom,
+	    left top,
+	    color-stop(0, #FFFFFF),
+	    color-stop(1.0, #bdbdbd)
+	);
+	width: 140px;
+}
+#LoadingConnect > .button:hover {
+	background-image: -webkit-gradient(
+	    linear,
+	    left bottom,
+	    left top,
+	    color-stop(0, #FFFFFF),
+	    color-stop(1.0, #d4d4d4)
+	);
+}
+/* ================== Conect window ============= */

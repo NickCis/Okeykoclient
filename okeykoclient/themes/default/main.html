@@ -1,0 +1,51 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link  href="css/ubuntuFont.css" rel="stylesheet" type="text/css" >
+	<link rel="stylesheet" href="css/style.css?v=2" type="text/css" media="screen" />
+
+	<script type="text/javascript" src="js/jquery.min.js"></script>
+	<script type="text/javascript" src="js/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="js/ui.connectwindow.js"></script>
+
+	<script type="text/javascript">
+		$(document).ready(function() {
+			connectWindowSettings();
+		});
+	</script>
+</head>
+<body>
+    <div id="ModalBg"></div>
+	<div id="LoginWindow">
+		<div class="header"><img id="logo" src="logo.png"/><span>OkeykoClient</span></div>
+		<div class="body">
+		    <span class="avatar"><img src="logo.png" class="opaque"/><img src="logo.png"/></span>
+			<div class="div0">
+				<div class="div2">
+					<input type="text"/>
+					<input type="password"/>
+				</div>
+				<div class="div1">
+					<p>User:</p><p>Pass:</p>
+				</div>
+
+			</div>
+			<div class="div3">
+				<input type="checkbox"/><p>Remember me</p><br/>
+				<input type="checkbox"/><p>Remember password</p><br/>
+				<input type="checkbox"/><p>Auto Login</p><br/>
+			</div>
+			<a href="#" class="button">Login</a>
+		</div>
+		<div class="foot"><a href="#">Preferences</a><a href="#">Ayuda</a></div>
+	</div>	
+    <div id="LoadingConnect">
+	    <p>Connecting</p>
+	    <img src="img/ani_loading_bar.gif" />
+	    <a href="#" class="button">Cancelar</a>
+	</div>
+	<div id="ConectWindow">
+	</div>
+</body>
+</html>

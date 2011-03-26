@@ -7,7 +7,8 @@ import Config
 import desktop
 import libokeyko
 import OkeThreads
-from gui import gtkui
+#from gui import gtkui
+from gui import newui
 
 
 
@@ -36,7 +37,13 @@ def main():
     ThreadHandler.setControl(Control)    
     #ActMen = OkeThreads.actmen(Control)
     #Control.update({'ActMen':ActMen})
-    gtkui.gtk_main(Control)
+    
+    
+    #gtkui.gtk_main(Control)
+    
+    newui.gtk_main(Control)
+    
+    
     #Notificaciones = Notification.MainClass(Conf)
     #MainWindow = okegtk.mainWindow(Okeyko, queueToServer, Notificaciones)
     #MainWindow.connect('redraw-done', OkeThreads.actmen, Okeyko, queueToGtk, Sonido, Notificaciones)
